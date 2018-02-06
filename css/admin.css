@@ -1,3 +1,7 @@
 .column-id {
-	width: 70px !important;
+	width: 70px;
+}
+
+.column-title {
+	width: 250px;
 }
