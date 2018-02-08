@@ -1,4 +1,4 @@
-# Common - News
+# Versa Drain
 ## v1.0.0
 
-News post type to be used with all CAH UCF sites. The CAH College site will pull posts of this type from all Wordpress sites.
+This plugin enables clients and employee functionality on WordPress for Versa Drain.

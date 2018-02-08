@@ -1,4 +1,25 @@
 <div class="inner-meta">
-	<label>Address: </label>
-	<input type="text" name="address" size="50" value="<?= $custom['address'][0] ?>"/>
+	<label>Business Address: </label>
+	<br/>
+	<input type="text" name="address" size="60" placeholder="ex: 1600 Amphitheatre Parkway Mountain View, CA 94043" value="<?= $custom['address'][0] ?>"/>
+	<br/>
+	<br/>
+
+	<label>Contact Name: </label>
+	<br/>
+	<input type="text" name="contact_name" size="20" placeholder="ex: John Doe" value="<?= $custom['contact_name'][0] ?>"/>
+	<br/>
+	<br/>
+
+	<label>Contact Email: </label>
+	<br/>
+	<input type="text" name="contact_email" size="20" placeholder="ex: john@gmail.com" value="<?= $custom['contact_email'][0] ?>"/>
+	<br/>
+	<br/>
+
+	<label>Contact Phone: </label>
+	<br/>
+	<input type="text" name="contact_phone" size="20" placeholder="ex: 888-123-4567" value="<?= $custom['contact_phone'][0] ?>"/>
+	<br/>
+	<br/>
 </div>
