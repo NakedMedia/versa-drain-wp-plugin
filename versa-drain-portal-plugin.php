@@ -195,6 +195,7 @@ function vd_client_updated_messages( $messages ) {
 		2  => 'Custom field updated.',
 		3  => 'Custom field deleted.',
 		4  => 'Client updated.',
+		5  => 'Error: passwords do not match',
 		6  => 'Client created.',
 		7  => 'Client saved.',
 		8  => 'Client submitted.',
@@ -230,7 +231,6 @@ function vd_employee_updated_messages( $messages ) {
 // Clients
 add_action('init', 'client_create_type');
 add_action("admin_init", "client_init");
-add_action('save_post', 'client_save');
 
 add_filter( 'manage_edit-client_columns', 'vd_edit_client_columns' );
 add_action( 'manage_client_posts_custom_column', 'vd_manage_client_columns', 10, 2 );
@@ -241,7 +241,6 @@ add_filter( 'post_updated_messages', 'vd_client_updated_messages' );
 // Employees
 add_action('init', 'employee_create_type');
 add_action("admin_init", "employee_init");
-add_action('save_post', 'employee_save', 20, 2);
 
 add_filter( 'manage_edit-employee_columns', 'vd_edit_employee_columns' );
 add_action( 'manage_employee_posts_custom_column', 'vd_manage_employee_columns', 10, 2 );
@@ -250,6 +249,7 @@ add_filter( 'post_updated_messages', 'vd_employee_updated_messages' );
 
 
 add_filter( 'enter_title_here', 'wpb_change_title_text' );
+add_action('save_post', 'cpt_save', 20, 2);
 
 /*----- API Route Registration -----*/
 // add_action( 'rest_api_init', function () {
@@ -347,6 +347,7 @@ function client_init() {
 	global $current_user;
 
 	add_meta_box("client-meta", "Client Info", "client_meta", "client", "normal", "high");
+	add_meta_box("password-meta", "Password", "meta_password", "client", "normal", "high");
 }
 
 function client_meta() {
@@ -356,22 +357,13 @@ function client_meta() {
     include_once('views/client.php');
 }
 
-function client_save() {
-	global $post;
-
-	update_post_meta($post->ID, "address", $_POST["address"]);
-	update_post_meta($post->ID, "contact_name", $_POST["contact_name"]);
-	update_post_meta($post->ID, "contact_email", $_POST["contact_email"]);
-	update_post_meta($post->ID, "contact_phone", $_POST["contact_phone"]);
-}
-
 
 // Employees
 function employee_init() {
 	global $current_user;
 
 	add_meta_box("employee-meta", "Employee Info", "employee_meta", "employee", "normal", "high");
-	add_meta_box("employee-password-meta", "Password", "employee_meta_password", "employee", "normal", "high");
+	add_meta_box("password-meta", "Password", "meta_password", "employee", "normal", "high");
 }
 
 function employee_meta() {
@@ -381,16 +373,16 @@ function employee_meta() {
     include_once('views/employee.php');
 }
 
-function employee_meta_password() {
+function meta_password() {
 	global $post;
     $custom = get_post_custom($post->ID);
 
     include_once('views/password.php');
 }
 
-function employee_save($post_id, $post) {
+function cpt_save($post_id, $post) {
 	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || $post->post_status == 'auto-draft' ) return $post_id;
-    if ( $post->post_type != 'employee' ) return $post_id;
+    if ( $post->post_type != 'employee' && $post->post_type != 'client' ) return $post_id;
 
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
@@ -410,8 +402,17 @@ function employee_save($post_id, $post) {
 	if(array_key_exists('password', $_POST) && $_POST['password'] != '')
 		update_post_meta($post->ID, "password", password_hash($_POST["password"], PASSWORD_DEFAULT));	
 
-	update_post_meta($post->ID, "employee_email", $_POST["employee_email"]);
-	update_post_meta($post->ID, "employee_phone", $_POST["employee_phone"]);
+	if($post->post_type == 'client') {
+		update_post_meta($post->ID, "address", $_POST["address"]);
+		update_post_meta($post->ID, "contact_name", $_POST["contact_name"]);
+		update_post_meta($post->ID, "contact_email", $_POST["contact_email"]);
+		update_post_meta($post->ID, "contact_phone", $_POST["contact_phone"]);
+	}
+
+	if($post->post_type == 'employee') {
+		update_post_meta($post->ID, "employee_email", $_POST["employee_email"]);
+		update_post_meta($post->ID, "employee_phone", $_POST["employee_phone"]);
+	}
 }
 
 ?>
