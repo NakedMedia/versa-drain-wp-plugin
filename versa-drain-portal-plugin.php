@@ -13,6 +13,7 @@
 // ini_set('display_errors', 1);
 // ini_set('display_startup_errors', 1);
 // error_reporting(E_ALL);
+require('jwt_helper.php');
 
 add_action('wp_enqueue_scripts', 'add_style');
 
@@ -37,7 +38,7 @@ function client_create_type() {
 	       	'public' => false,
 	       	'show_ui' => true,
 	       	'capability_type' => 'post',
-	       	'show_in_rest' => true,
+	       	'show_in_rest' => false,
 	       	'hierarchical' => false,
 	       	'rewrite' => array('slug' => 'clients'),
 			'menu_icon'  => 'dashicons-store',
@@ -62,7 +63,7 @@ function employee_create_type() {
 	       	'public' => false,
 	       	'show_ui' => true,
 	       	'capability_type' => 'post',
-	       	'show_in_rest' => true,
+	       	'show_in_rest' => false,
 	       	'hierarchical' => false,
 	       	'rewrite' => array('slug' => 'employees'),
 			'menu_icon'  => 'dashicons-nametag',
@@ -72,6 +73,31 @@ function employee_create_type() {
 	            'thumbnail')
 	    );
 	register_post_type( 'employee' , $args );
+}
+
+function report_create_type() {
+	$args = array(
+	      	'label' => 'Reports',
+	      	'labels' => array(
+	      		'add_new_item' => 'Create New Report',
+	      		'edit_item' => 'Edit Report',
+	      		'search_items' => 'Search Reports',
+	      		'not_found' => 'No Reports Found',
+	      		'singular_name' => 'Report'
+	      	),
+	       	'public' => false,
+	       	'show_ui' => true,
+	       	'capability_type' => 'post',
+	       	'show_in_rest' => false,
+	       	'hierarchical' => false,
+	       	'rewrite' => array('slug' => 'reports'),
+			'menu_icon'  => 'dashicons-clipboard',
+	        'query_var' => true,
+	        'supports' => array(
+	            'editor',
+	            'thumbnail')
+	    );
+	register_post_type( 'report' , $args );
 }
 
 /* ---- Modify Title Texts ---- */
@@ -110,8 +136,8 @@ function vd_edit_employee_columns( $columns ) {
 		'cb' => '<input type="checkbox" />',
 		'id' => __('ID'),
 		'title' => __( 'Employee' ),
-		'employee_email' => __('Email'),
-		'employee_phone' => __('Phone'),
+		'email' => __('Email'),
+		'phone' => __('Phone'),
 	);
 
 	return $columns;
@@ -157,12 +183,12 @@ function vd_manage_employee_columns( $column, $post_id ) {
 			echo $post_id;
 			break;
 
-		case 'employee_email':
-			echo $custom['employee_email'][0] ?: '--';
+		case 'email':
+			echo $custom['email'][0] ?: '--';
 			break;
 
-		case 'employee_phone':
-			echo $custom['employee_phone'][0] ?: '--';
+		case 'phone':
+			echo $custom['phone'][0] ?: '--';
 			break;
 
 		default :
@@ -248,97 +274,154 @@ add_filter( 'manage_edit-employee_sortable_columns', 'vd_sortable_employee_colum
 add_filter( 'post_updated_messages', 'vd_employee_updated_messages' );
 
 
+// Reports
+add_action('init', 'report_create_type');
+add_action("admin_init", "report_init");
+
+
 add_filter( 'enter_title_here', 'wpb_change_title_text' );
 add_action('save_post', 'cpt_save', 20, 2);
 
 /*----- API Route Registration -----*/
-// add_action( 'rest_api_init', function () {
-// 	register_rest_route( 'news', '/sites', array(
-// 		'methods' => 'GET',
-// 		'callback' => 'get_all_sites',
-// 	) );
-// } );
 
-// function get_all_sites( $data ) {
-// 	$urls = explode(";", get_option('news_list_option'));
+function getUserFromToken( $token ) {
+	$users = get_posts(
+		array(
+			'posts_per_page' => 1,
+			'post_type' => ['employee', 'client'],
+			'post_status' => 'publish',
+			'meta_key' => 'token',
+			'meta_value' => $token,
+		)
+	);
 
-// 	return $urls;
-// }
+	return $users[0];
+}
 
-// /*----- API Meta Registration -----*/
-// add_action( 'rest_api_init', 'api_register_approved' );
-// add_action( 'rest_api_init', 'api_register_author' );
-// add_action( 'rest_api_init', 'api_register_site_name' );
-// add_action( 'rest_api_init', 'api_register_featured_media' );
+add_action( 'rest_api_init', function () {
+	register_rest_route( 'vd', '/reports', array(
+		array(
+			'methods' => 'GET',
+			'callback' => 'vd_get_user_reports',
+		),
+		array(
+			'methods' => 'POST',
+			'callback' => 'vd_create_report',
+		),
+	));
 
-// function api_register_approved() {
-//     register_rest_field( 'news',
-//         'approved',
-//         array(
-//             'get_callback'    => 'api_get_approved',
-//             'update_callback' => 'api_update_approved',
-//             'schema'          => null,
-//         )
-//     );
-// }
+	register_rest_route( 'vd', '/login', array(
+		'methods' => 'POST',
+		'callback' => 'vd_api_login',
+	));
+} );
 
-// function api_get_approved( $object, $field_name, $request ) {
-//     return intval(get_post_meta( $object[ 'id' ], $field_name, true ));
-// }
+function vd_api_login( WP_REST_Request $request  ) {
+	if(!$request['email'] || !$request['password'])
+		return array('error' => 'Please provide an email address and password');
 
-// function api_update_approved($value, $object, $field_name){
-// 	return update_post_meta( $object->ID, $field_name, strip_tags( $value ) );
-// }
+	$args = array(
+		'posts_per_page'   => -1,
+		'post_type'        => ['employee', 'client'],
+		'post_status'      => 'publish',
+	);
 
-// function api_register_author() {
-//     register_rest_field( 'news',
-//         'author',
-//         array(
-//             'get_callback'    => 'api_get_author',
-//             'update_callback' => 'api_update_author',
-//             'schema'          => null,
-//         )
-//     );
-// }
+	foreach (get_posts($args) as $user) {
+		if(
+			get_post_meta($user->ID, 'email', true) == $request['email'] ||
+			get_post_meta($user->ID, 'contact_email', true) == $request['email'] && 
+			password_verify($request['password'], get_post_meta($user->ID, 'password', true))
+		) {
+			$token = JWT::encode(array('id' => $user->ID), 'secret_server_key');
 
-// function api_get_author( $object, $field_name, $request ) {
-//     return get_post_meta( $object[ 'id' ], $field_name, true );
-// }
+			update_post_meta($user->ID, 'token', $token);
+			return array('token' => $token);
+		}
+	}
 
-// function api_update_author($value, $object, $field_name){
-// 	return update_post_meta( $object->ID, $field_name, strip_tags( $value ) );
-// }
+	return array('error' => 'Invalid login');
+}
 
-// function api_register_site_name() {
-//     register_rest_field( 'news',
-//         'site_name',
-//         array(
-//             'get_callback'    => 'api_get_site_name',
-//             'update_callback' => null,
-//             'schema'          => null,
-//         )
-//     );
-// }
+function vd_get_user_reports( WP_REST_Request $request  ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
 
-// function api_get_site_name( $object, $field_name, $request ) {
-//     return get_option('blogname');
-// }
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
 
-// function api_register_featured_media() {
-//     register_rest_field( 'news',
-//         'featured_media',
-//         array(
-//             'get_callback'    => 'api_get_featured_media',
-//             'update_callback' => null,
-//             'schema'          => null,
-//         )
-//     );
-// }
+	$args = array(
+		'posts_per_page'   => -1,
+		'post_type'        => 'report',
+		'post_status'      => 'publish',
+	);
 
-// function api_get_featured_media( $object, $field_name, $request ) {
-//     return wp_get_attachment_url($object["featured_media"]);
-// }
+	$reports = [];
 
+	foreach (get_posts($args) as $post) {
+		$employee_id = (int) get_post_meta($post->ID, 'employee_id', true);
+		$client_id = (int) get_post_meta($post->ID, 'client_id', true);
+
+		if($employee_id != $user->ID && $client_id != $user->ID)
+			continue;
+
+		$report = array(
+			'id' => $post->ID,
+			'description' => $post->post_content,
+			'employee' => array(
+				'id' => $employee_id,
+				'name' => get_post($employee_id)->post_title,
+			),
+			'client' => array(
+				'id' => $client_id,
+				'name' => get_post($client_id)->post_title,
+			),
+		);
+
+		array_push($reports, $report);
+	}
+
+	return $reports;
+}
+
+function vd_create_report( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$postarr = array(
+		'post_content' => $request['description'],
+		'post_status' => 'publish',
+		'post_type' => 'report'
+	);
+
+	$post = get_post(wp_insert_post($postarr));
+	update_post_meta($post->ID, 'client_id', $request['client_id'] ?: $user->ID);
+	update_post_meta($post->ID, 'employee_id', $request['employee_id'] ?: $user->ID);
+
+	$employee_id = (int) get_post_meta($post->ID, 'employee_id', true);
+	$client_id = (int) get_post_meta($post->ID, 'client_id', true);
+
+	$report = array(
+		'id' => $post->ID,
+		'description' => $post->post_content,
+		'employee' => array(
+			'id' => $employee_id,
+			'name' => get_post($employee_id)->post_title,
+		),
+		'client' => array(
+			'id' => $client_id,
+			'name' => get_post($client_id)->post_title,
+		),
+	);
+
+	return $report;
+}
 
 /*------ Metabox Functions --------*/
 
@@ -373,6 +456,22 @@ function employee_meta() {
     include_once('views/employee.php');
 }
 
+
+// Reports
+function report_init() {
+	global $current_user;
+
+	add_meta_box("report-meta", "Report Info", "report_meta", "report", "normal", "high");
+}
+
+function report_meta() {
+	global $post;
+    $custom = get_post_custom($post->ID);
+
+    include_once('views/report.php');
+}
+
+
 function meta_password() {
 	global $post;
     $custom = get_post_custom($post->ID);
@@ -382,7 +481,7 @@ function meta_password() {
 
 function cpt_save($post_id, $post) {
 	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || $post->post_status == 'auto-draft' ) return $post_id;
-    if ( $post->post_type != 'employee' && $post->post_type != 'client' ) return $post_id;
+    if ( $post->post_type != 'employee' && $post->post_type != 'client' && $post->post_type != 'report' ) return $post_id;
 
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
@@ -410,8 +509,13 @@ function cpt_save($post_id, $post) {
 	}
 
 	if($post->post_type == 'employee') {
-		update_post_meta($post->ID, "employee_email", $_POST["employee_email"]);
-		update_post_meta($post->ID, "employee_phone", $_POST["employee_phone"]);
+		update_post_meta($post->ID, "email", $_POST["email"]);
+		update_post_meta($post->ID, "phone", $_POST["phone"]);
+	}
+
+	if($post->post_type == 'report') {
+		update_post_meta($post->ID, "client_id", $_POST["client_id"]);
+		update_post_meta($post->ID, "employee_id", $_POST["employee_id"]);
 	}
 }
 
