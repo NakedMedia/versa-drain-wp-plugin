@@ -143,6 +143,19 @@ function vd_edit_employee_columns( $columns ) {
 	return $columns;
 }
 
+function vd_edit_report_columns( $columns ) {
+
+	$columns = array(
+		'cb' => '<input type="checkbox" />',
+		'id' => __('ID'),
+		'description' => __( 'Description' ),
+		'client' => __( 'Client' ),
+		'employee' => __('Employee'),
+	);
+
+	return $columns;
+}
+
 /* ---- Get Column Data ---- */
 function vd_manage_client_columns( $column, $post_id ) {
 	global $post;
@@ -196,6 +209,34 @@ function vd_manage_employee_columns( $column, $post_id ) {
 	}
 }
 
+function vd_manage_report_columns( $column, $post_id ) {
+	global $post;
+
+	$custom = get_post_custom($post_id);
+
+	switch( $column ) {
+
+		case 'id' :
+			echo $post_id;
+			break;
+
+		case 'description':
+			echo '<a href='.get_edit_post_link($post->ID).'>'.$post->post_content.'</a>';
+			break;
+
+		case 'client':
+			echo get_post($custom['client_id'][0])->post_title;
+			break;
+
+		case 'employee':
+			echo get_post($custom['employee_id'][0])->post_title;
+			break;
+
+		default :
+			break;
+	}
+}
+
 /* ---- Select Sortable Columns ---- */
 function vd_sortable_client_column( $columns ) {
     $columns['id'] = 'id';
@@ -205,6 +246,14 @@ function vd_sortable_client_column( $columns ) {
 
 function vd_sortable_employee_column( $columns ) {
     $columns['id'] = 'id';
+ 
+    return $columns;
+}
+
+function vd_sortable_report_column( $columns ) {
+    $columns['id'] = 'id';
+    $columns['client'] = 'client';
+    $columns['employee'] = 'employee';
  
     return $columns;
 }
@@ -252,6 +301,27 @@ function vd_employee_updated_messages( $messages ) {
 	return $messages;
 }
 
+function vd_report_updated_messages( $messages ) {
+	$post             = get_post();
+	$post_type        = get_post_type( $post );
+	$post_type_object = get_post_type_object( $post_type );
+
+	$messages['report'] = array(
+		0  => '', // Unused. Messages start at index 1.
+		1  => 'Report updated.',
+		2  => 'Custom field updated.',
+		3  => 'Custom field deleted.',
+		4  => 'Report updated.',
+		5  => 'Error: passwords do not match',
+		6  => 'Report created.',
+		7  => 'Report saved.',
+		8  => 'Report submitted.',
+		10 => 'Report draft updated.'
+	);
+
+	return $messages;
+}
+
 /* ---- Call Functions ---- */
 
 // Clients
@@ -277,6 +347,11 @@ add_filter( 'post_updated_messages', 'vd_employee_updated_messages' );
 // Reports
 add_action('init', 'report_create_type');
 add_action("admin_init", "report_init");
+
+add_filter( 'manage_edit-report_columns', 'vd_edit_report_columns' );
+add_action( 'manage_report_posts_custom_column', 'vd_manage_report_columns', 10, 2 );
+add_filter( 'manage_edit-report_sortable_columns', 'vd_sortable_report_column' );
+add_filter( 'post_updated_messages', 'vd_report_updated_messages' );
 
 
 add_filter( 'enter_title_here', 'wpb_change_title_text' );
