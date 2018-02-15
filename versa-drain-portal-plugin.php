@@ -389,6 +389,11 @@ add_action( 'rest_api_init', function () {
 		'methods' => 'POST',
 		'callback' => 'vd_api_login',
 	));
+
+	register_rest_route( 'vd', '/media', array(
+		'methods' => 'POST',
+		'callback' => 'vd_api_media',
+	));
 } );
 
 function vd_api_login( WP_REST_Request $request  ) {
@@ -410,7 +415,7 @@ function vd_api_login( WP_REST_Request $request  ) {
 			$token = JWT::encode(array('id' => $user->ID), 'secret_server_key');
 
 			update_post_meta($user->ID, 'token', $token);
-			return array('token' => $token);
+			return new WP_REST_Response( array('token' => $token) );
 		}
 	}
 
@@ -444,6 +449,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		$report = array(
 			'id' => $post->ID,
 			'description' => $post->post_content,
+			'image' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
 			'employee' => array(
 				'id' => $employee_id,
 				'name' => get_post($employee_id)->post_title,
@@ -457,7 +463,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		array_push($reports, $report);
 	}
 
-	return $reports;
+	return new WP_REST_Response( $reports );
 }
 
 function vd_create_report( WP_REST_Request $request ) {
@@ -479,12 +485,16 @@ function vd_create_report( WP_REST_Request $request ) {
 	update_post_meta($post->ID, 'client_id', $request['client_id'] ?: $user->ID);
 	update_post_meta($post->ID, 'employee_id', $request['employee_id'] ?: $user->ID);
 
+	if($request['media_id'])
+		set_post_thumbnail($post->ID, $request['media_id']);
+
 	$employee_id = (int) get_post_meta($post->ID, 'employee_id', true);
 	$client_id = (int) get_post_meta($post->ID, 'client_id', true);
 
 	$report = array(
 		'id' => $post->ID,
 		'description' => $post->post_content,
+		'image' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
 		'employee' => array(
 			'id' => $employee_id,
 			'name' => get_post($employee_id)->post_title,
@@ -495,7 +505,33 @@ function vd_create_report( WP_REST_Request $request ) {
 		),
 	);
 
-	return $report;
+	return new WP_REST_Response( $report );
+}
+
+function vd_api_media( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$file = $request->get_file_params();
+
+	require_once( ABSPATH . 'wp-admin/includes/image.php' );
+	require_once( ABSPATH . 'wp-admin/includes/file.php' );
+	require_once( ABSPATH . 'wp-admin/includes/media.php' );
+
+	if (empty($file)) {
+		$response = new WP_REST_Response( array('error' => 'No file provided') );
+		$response->set_status(403);
+		return $response;
+	}
+
+    $attachment_id = media_handle_upload( 'file', 0 );
+	    
+    return new WP_REST_Response( array('attachment_id' => $attachment_id) );	
 }
 
 /*------ Metabox Functions --------*/
