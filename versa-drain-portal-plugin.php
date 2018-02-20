@@ -15,8 +15,6 @@
 // error_reporting(E_ALL);
 require('jwt_helper.php');
 
-add_action('wp_enqueue_scripts', 'add_style');
-
 add_action('admin_head', 'vd_admin_styles');
 
 function vd_admin_styles() {
