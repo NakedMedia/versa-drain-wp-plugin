@@ -371,7 +371,39 @@ function getUserFromToken( $token ) {
 	return $users[0];
 }
 
+function getEmployeeById( $employee_id ) {
+	return array(
+		'id' => $employee_id,
+		'name' => get_post($employee_id)->post_title,
+		'phone' => get_post_meta($employee_id, 'phone', true),
+		'email' => get_post_meta($employee_id, 'email', true),
+	);
+}
+
+function getClientById( $client_id ) {
+	return array(
+		'id' => $client_id,
+		'name' => get_post($client_id)->post_title,
+		'contact_name' => get_post_meta($client_id, 'contact_name', true),
+		'contact_phone' => get_post_meta($client_id, 'contact_phone', true),
+		'contact_email' => get_post_meta($client_id, 'contact_email', true),
+		'address' => get_post_meta($client_id, 'address', true),
+	);
+}
+
 add_action( 'rest_api_init', function () {
+	// CORS
+	remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
+	add_filter( 'rest_pre_serve_request', function( $value ) {
+		header( 'Access-Control-Allow-Origin: *' );
+		header( 'Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, vd-token' );
+		header( 'Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE' );
+		header( 'Access-Control-Allow-Credentials: true' );
+
+		return $value;
+	});
+
+	// Routes
 	register_rest_route( 'vd', '/reports', array(
 		array(
 			'methods' => 'GET',
@@ -392,11 +424,17 @@ add_action( 'rest_api_init', function () {
 		'methods' => 'POST',
 		'callback' => 'vd_api_media',
 	));
-} );
+
+	register_rest_route( 'vd', '/me', array(
+		'methods' => 'GET',
+		'callback' => 'vd_get_me',
+	));
+});
+
 
 function vd_api_login( WP_REST_Request $request  ) {
-	if(!$request['email'] || !$request['password'])
-		return array('error' => 'Please provide an email address and password');
+	if(!$request['id'] || !$request['password'])
+		return array('error' => 'Please provide a user ID and password');
 
 	$args = array(
 		'posts_per_page'   => -1,
@@ -406,8 +444,7 @@ function vd_api_login( WP_REST_Request $request  ) {
 
 	foreach (get_posts($args) as $user) {
 		if(
-			get_post_meta($user->ID, 'email', true) == $request['email'] ||
-			get_post_meta($user->ID, 'contact_email', true) == $request['email'] && 
+			$user->ID == $request['id'] && 
 			password_verify($request['password'], get_post_meta($user->ID, 'password', true))
 		) {
 			$token = JWT::encode(array('id' => $user->ID), 'secret_server_key');
@@ -448,14 +485,8 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 			'id' => $post->ID,
 			'description' => $post->post_content,
 			'image' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
-			'employee' => array(
-				'id' => $employee_id,
-				'name' => get_post($employee_id)->post_title,
-			),
-			'client' => array(
-				'id' => $client_id,
-				'name' => get_post($client_id)->post_title,
-			),
+			'employee' => getEmployeeById($employee_id),
+			'client' => getClientById($client_id),
 		);
 
 		array_push($reports, $report);
@@ -530,6 +561,39 @@ function vd_api_media( WP_REST_Request $request ) {
     $attachment_id = media_handle_upload( 'file', 0 );
 	    
     return new WP_REST_Response( array('attachment_id' => $attachment_id) );	
+}
+
+function vd_get_me( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->post_type == 'employee') {
+		$user = array(
+			'id' => $user->ID,
+			'name' => $user->post_title,
+			'phone' => get_post_meta($user->ID, 'phone', true),
+			'email' => get_post_meta($user->ID, 'email', true),
+		);
+	}
+
+	if($user->post_type == 'client') {
+		$user = array(
+			'id' => $user->ID,
+			'name' => $user->post_title,
+			'contact_name' => get_post_meta($user->ID, 'contact_name', true),
+			'contact_email' => get_post_meta($user->ID, 'contact_email', true),
+			'contact_phone' => get_post_meta($user->ID, 'contact_phone', true),
+			'address' => get_post_meta($user->ID, 'address', true),
+		);
+	}
+
+
+	return new WP_REST_Response( $user );
 }
 
 /*------ Metabox Functions --------*/
