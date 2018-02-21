@@ -377,6 +377,7 @@ function getEmployeeById( $employee_id ) {
 		'name' => get_post($employee_id)->post_title,
 		'phone' => get_post_meta($employee_id, 'phone', true),
 		'email' => get_post_meta($employee_id, 'email', true),
+		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $employee_id ))[0],
 	);
 }
 
@@ -388,6 +389,7 @@ function getClientById( $client_id ) {
 		'contact_phone' => get_post_meta($client_id, 'contact_phone', true),
 		'contact_email' => get_post_meta($client_id, 'contact_email', true),
 		'address' => get_post_meta($client_id, 'address', true),
+		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $client_id ))[0],
 	);
 }
 
@@ -484,7 +486,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		$report = array(
 			'id' => $post->ID,
 			'description' => $post->post_content,
-			'image' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
+			'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
 			'employee' => getEmployeeById($employee_id),
 			'client' => getClientById($client_id),
 		);
@@ -523,7 +525,7 @@ function vd_create_report( WP_REST_Request $request ) {
 	$report = array(
 		'id' => $post->ID,
 		'description' => $post->post_content,
-		'image' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
+		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
 		'employee' => array(
 			'id' => $employee_id,
 			'name' => get_post($employee_id)->post_title,
