@@ -378,6 +378,7 @@ function getEmployeeById( $employee_id ) {
 		'phone' => get_post_meta($employee_id, 'phone', true),
 		'email' => get_post_meta($employee_id, 'email', true),
 		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $employee_id ))[0],
+		'type' => 'employee'
 	);
 }
 
@@ -390,6 +391,7 @@ function getClientById( $client_id ) {
 		'contact_email' => get_post_meta($client_id, 'contact_email', true),
 		'address' => get_post_meta($client_id, 'address', true),
 		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $client_id ))[0],
+		'type' => 'client'
 	);
 }
 
@@ -420,6 +422,11 @@ add_action( 'rest_api_init', function () {
 	register_rest_route( 'vd', '/login', array(
 		'methods' => 'POST',
 		'callback' => 'vd_api_login',
+	));
+
+	register_rest_route( 'vd', '/logout', array(
+		'methods' => 'GET',
+		'callback' => 'vd_api_logout',
 	));
 
 	register_rest_route( 'vd', '/media', array(
@@ -459,6 +466,20 @@ function vd_api_login( WP_REST_Request $request  ) {
 	return array('error' => 'Invalid login');
 }
 
+function vd_api_logout( WP_REST_Request $request  ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	update_post_meta($user->ID, 'token', null);
+
+	return new WP_REST_Response( array('message' => 'Successfully logged out') );
+}
+
 function vd_get_user_reports( WP_REST_Request $request  ) {
 	$user = getUserFromToken($request->get_header('vd-token'));
 
@@ -486,7 +507,8 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		$report = array(
 			'id' => $post->ID,
 			'description' => $post->post_content,
-			'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
+			'date' => $post->post_date,
+			'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ), 'large')[0],
 			'employee' => getEmployeeById($employee_id),
 			'client' => getClientById($client_id),
 		);
@@ -526,14 +548,8 @@ function vd_create_report( WP_REST_Request $request ) {
 		'id' => $post->ID,
 		'description' => $post->post_content,
 		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
-		'employee' => array(
-			'id' => $employee_id,
-			'name' => get_post($employee_id)->post_title,
-		),
-		'client' => array(
-			'id' => $client_id,
-			'name' => get_post($client_id)->post_title,
-		),
+		'employee' => getEmployeeById($employee_id),
+		'client' => getClientById($client_id),
 	);
 
 	return new WP_REST_Response( $report );
@@ -575,23 +591,11 @@ function vd_get_me( WP_REST_Request $request ) {
 	}
 
 	if($user->post_type == 'employee') {
-		$user = array(
-			'id' => $user->ID,
-			'name' => $user->post_title,
-			'phone' => get_post_meta($user->ID, 'phone', true),
-			'email' => get_post_meta($user->ID, 'email', true),
-		);
+		$user = getEmployeeById($user->ID);
 	}
 
 	if($user->post_type == 'client') {
-		$user = array(
-			'id' => $user->ID,
-			'name' => $user->post_title,
-			'contact_name' => get_post_meta($user->ID, 'contact_name', true),
-			'contact_email' => get_post_meta($user->ID, 'contact_email', true),
-			'contact_phone' => get_post_meta($user->ID, 'contact_phone', true),
-			'address' => get_post_meta($user->ID, 'address', true),
-		);
+		$user = getClientById($user->ID);
 	}
 
 
