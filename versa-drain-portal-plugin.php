@@ -438,6 +438,16 @@ add_action( 'rest_api_init', function () {
 		'methods' => 'GET',
 		'callback' => 'vd_get_me',
 	));
+
+	register_rest_route( 'vd', '/password', array(
+		'methods' => 'POST',
+		'callback' => 'vd_change_password',
+	));
+
+	register_rest_route( 'vd', '/profile-picture', array(
+		'methods' => 'POST',
+		'callback' => 'vd_change_profile_picture',
+	));
 });
 
 
@@ -547,7 +557,7 @@ function vd_create_report( WP_REST_Request $request ) {
 	$report = array(
 		'id' => $post->ID,
 		'description' => $post->post_content,
-		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ))[0],
+		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ), 'large')[0],
 		'employee' => getEmployeeById($employee_id),
 		'client' => getClientById($client_id),
 	);
@@ -578,7 +588,7 @@ function vd_api_media( WP_REST_Request $request ) {
 
     $attachment_id = media_handle_upload( 'file', 0 );
 	    
-    return new WP_REST_Response( array('attachment_id' => $attachment_id) );	
+    return new WP_REST_Response( array('media_id' => $attachment_id) );	
 }
 
 function vd_get_me( WP_REST_Request $request ) {
@@ -600,6 +610,39 @@ function vd_get_me( WP_REST_Request $request ) {
 
 
 	return new WP_REST_Response( $user );
+}
+
+function vd_change_password( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if(password_verify($request['currentPassword'], get_post_meta($user->ID, 'password', true))) {
+		update_post_meta($user->ID, "password", password_hash($request["newPassword"], PASSWORD_DEFAULT));
+		return new WP_REST_Response( array('message' => 'Password changed Successfully') );
+	}
+
+	return new WP_REST_Response( array('message' => 'Incorrect password') );
+}
+
+function vd_change_profile_picture( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if(!$request['media_id'])
+		return new WP_REST_Response( array('error' => 'No image provided') );
+
+	set_post_thumbnail($user->ID, $request['media_id']);
+	return new WP_REST_Response( $user->post_type == 'employee' ? getEmployeeById($user->ID) : getClientById($user->ID) );
 }
 
 /*------ Metabox Functions --------*/
