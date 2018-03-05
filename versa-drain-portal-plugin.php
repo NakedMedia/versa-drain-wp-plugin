@@ -136,6 +136,7 @@ function vd_edit_employee_columns( $columns ) {
 		'title' => __( 'Employee' ),
 		'email' => __('Email'),
 		'phone' => __('Phone'),
+		'type' => __('Type'),
 	);
 
 	return $columns;
@@ -200,6 +201,10 @@ function vd_manage_employee_columns( $column, $post_id ) {
 
 		case 'phone':
 			echo $custom['phone'][0] ?: '--';
+			break;
+
+		case 'type':
+			echo ucfirst($custom['type'][0]);
 			break;
 
 		default :
@@ -733,6 +738,7 @@ function cpt_save($post_id, $post) {
 	if($post->post_type == 'employee') {
 		update_post_meta($post->ID, "email", $_POST["email"]);
 		update_post_meta($post->ID, "phone", $_POST["phone"]);
+		update_post_meta($post->ID, "type", $_POST["type"]);
 	}
 
 	if($post->post_type == 'report') {
