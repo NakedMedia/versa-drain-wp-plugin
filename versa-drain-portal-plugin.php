@@ -362,18 +362,31 @@ add_action('save_post', 'cpt_save', 20, 2);
 
 /*----- API Route Registration -----*/
 
+function generateRandomString($length = 10) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
+
 function getUserFromToken( $token ) {
 	$users = get_posts(
 		array(
-			'posts_per_page' => 1,
+			'posts_per_page' => -1,
 			'post_type' => ['employee', 'client'],
 			'post_status' => 'publish',
-			'meta_key' => 'token',
-			'meta_value' => $token,
 		)
 	);
 
-	return $users[0];
+	foreach ($users as $user) {
+		if($token == get_post_meta($user->ID, 'token', true))
+			return $user;
+	}
+
+	return null;
 }
 
 function getEmployeeById( $employee_id ) {
@@ -383,7 +396,7 @@ function getEmployeeById( $employee_id ) {
 		'phone' => get_post_meta($employee_id, 'phone', true),
 		'email' => get_post_meta($employee_id, 'email', true),
 		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $employee_id ))[0],
-		'type' => 'employee'
+		'type' => get_post_meta($employee_id, 'type', true),
 	);
 }
 
@@ -421,6 +434,50 @@ add_action( 'rest_api_init', function () {
 		array(
 			'methods' => 'POST',
 			'callback' => 'vd_create_report',
+		),
+	));
+
+	register_rest_route( 'vd', '/clients', array(
+		array(
+			'methods' => 'GET',
+			'callback' => 'vd_get_clients',
+		),
+		array(
+			'methods' => 'POST',
+			'callback' => 'vd_create_client',
+		),
+	));
+
+	register_rest_route( 'vd', '/clients/(?P<id>\d+)', array(
+		array(
+			'methods' => 'PATCH',
+			'callback' => 'vd_update_client',
+		),
+		array(
+			'methods' => 'DELETE',
+			'callback' => 'vd_delete_client',
+		),
+	));
+
+	register_rest_route( 'vd', '/employees', array(
+		array(
+			'methods' => 'GET',
+			'callback' => 'vd_get_employees',
+		),
+		array(
+			'methods' => 'POST',
+			'callback' => 'vd_create_employee',
+		),
+	));
+
+	register_rest_route( 'vd', '/employees/(?P<id>\d+)', array(
+		array(
+			'methods' => 'PATCH',
+			'callback' => 'vd_update_employee',
+		),
+		array(
+			'methods' => 'DELETE',
+			'callback' => 'vd_delete_employee',
 		),
 	));
 
@@ -471,7 +528,7 @@ function vd_api_login( WP_REST_Request $request  ) {
 			$user->ID == $request['id'] && 
 			password_verify($request['password'], get_post_meta($user->ID, 'password', true))
 		) {
-			$token = JWT::encode(array('id' => $user->ID), 'secret_server_key');
+			$token = JWT::encode(array('id' => $user->ID), generateRandomString(5));
 
 			update_post_meta($user->ID, 'token', $token);
 			return new WP_REST_Response( array('token' => $token) );
@@ -490,7 +547,7 @@ function vd_api_logout( WP_REST_Request $request  ) {
 		return $response;
 	}
 
-	update_post_meta($user->ID, 'token', null);
+	update_post_meta($user->ID, 'token', "NONE");
 
 	return new WP_REST_Response( array('message' => 'Successfully logged out') );
 }
@@ -516,7 +573,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		$employee_id = (int) get_post_meta($post->ID, 'employee_id', true);
 		$client_id = (int) get_post_meta($post->ID, 'client_id', true);
 
-		if($employee_id != $user->ID && $client_id != $user->ID)
+		if($employee_id != $user->ID && $client_id != $user->ID && $user->type != 'admin')
 			continue;
 
 		$report = array(
@@ -568,6 +625,282 @@ function vd_create_report( WP_REST_Request $request ) {
 	);
 
 	return new WP_REST_Response( $report );
+}
+
+function vd_get_clients( WP_REST_Request $request  ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$args = array(
+		'posts_per_page'   => -1,
+		'post_type'        => 'client',
+		'post_status'      => 'publish',
+	);
+
+	$clients = [];
+
+	foreach (get_posts($args) as $post) {
+		$client = getClientById($post->ID);
+		array_push($clients, $client);
+	}
+
+	return new WP_REST_Response( $clients );
+}
+
+function vd_create_client( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$postarr = array(
+		'post_title' => $request['name'],
+		'post_status' => 'publish',
+		'post_type' => 'client'
+	);
+
+	$post = get_post(wp_insert_post($postarr));
+	update_post_meta($post->ID, 'address', $request['address']);
+	update_post_meta($post->ID, 'contact_name', $request['contact_name']);
+	update_post_meta($post->ID, 'contact_email', $request['contact_email']);
+	update_post_meta($post->ID, 'contact_phone', $request['contact_phone']);
+	update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
+	update_post_meta($post->ID, 'token', "NONE");
+
+	if($request['media_id'])
+		set_post_thumbnail($post->ID, $request['media_id']);
+
+	$client = getClientById($post->ID);
+
+	return new WP_REST_Response( $client );
+}
+
+function vd_update_client( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$post = get_post($request->get_param('id'));
+
+	if(!$post) {
+		$response = new WP_REST_Response( array('error' => 'No client with that ID found') );
+		$response->set_status(404);
+		return $response;
+	}
+
+	wp_update_post(array('ID' => $post->ID, 'post_title' => $request['name']));
+
+	update_post_meta($post->ID, 'address', $request['address']);
+	update_post_meta($post->ID, 'contact_name', $request['contact_name']);
+	update_post_meta($post->ID, 'contact_email', $request['contact_email']);
+	update_post_meta($post->ID, 'contact_phone', $request['contact_phone']);
+
+	if($request["password"])
+		update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
+
+	if($request['media_id'])
+		set_post_thumbnail($post->ID, $request['media_id']);
+
+	$client = getClientById($post->ID);
+
+	return new WP_REST_Response( $client );
+}
+
+function vd_delete_client( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$post = get_post($request->get_param('id'));
+
+	if(!$post) {
+		$response = new WP_REST_Response( array('error' => 'No client with that ID found') );
+		$response->set_status(404);
+		return $response;
+	}
+
+	$client = getClientById($post->ID);
+
+	wp_delete_post($post->ID);
+
+	return new WP_REST_Response( $client );
+}
+
+function vd_get_employees( WP_REST_Request $request  ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$args = array(
+		'posts_per_page'   => -1,
+		'post_type'        => 'employee',
+		'post_status'      => 'publish',
+	);
+
+	$employees = [];
+
+	foreach (get_posts($args) as $post) {
+		$employee = getEmployeeById($post->ID);
+		array_push($employees, $employee);
+	}
+
+	return new WP_REST_Response( $employees );
+}
+
+function vd_create_employee( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$postarr = array(
+		'post_title' => $request['name'],
+		'post_status' => 'publish',
+		'post_type' => 'employee'
+	);
+
+	$post = get_post(wp_insert_post($postarr));
+	update_post_meta($post->ID, 'phone', $request['phone']);
+	update_post_meta($post->ID, 'email', $request['email']);
+	update_post_meta($post->ID, 'type', $request['type']);
+	update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
+	update_post_meta($post->ID, 'token', "NONE");
+
+	if($request['media_id'])
+		set_post_thumbnail($post->ID, $request['media_id']);
+
+	$employee = getEmployeeById($post->ID);
+
+	return new WP_REST_Response( $employee );
+}
+
+function vd_update_employee( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$post = get_post($request->get_param('id'));
+
+	if(!$post) {
+		$response = new WP_REST_Response( array('error' => 'No employee with that ID found') );
+		$response->set_status(404);
+		return $response;
+	}
+
+	wp_update_post(array('ID' => $post->ID, 'post_title' => $request['name']));
+
+	update_post_meta($post->ID, 'phone', $request['phone']);
+	update_post_meta($post->ID, 'email', $request['email']);
+	update_post_meta($post->ID, 'type', $request['type']);
+
+	if($request["password"])
+		update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
+
+	if($request['media_id'])
+		set_post_thumbnail($post->ID, $request['media_id']);
+
+	$employee = getEmployeeById($post->ID);
+
+	return new WP_REST_Response( $employee );
+}
+
+function vd_delete_employee( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$post = get_post($request->get_param('id'));
+
+	if(!$post) {
+		$response = new WP_REST_Response( array('error' => 'No employee with that ID found') );
+		$response->set_status(404);
+		return $response;
+	}
+
+	$employee = getEmployeeById($post->ID);
+
+	wp_delete_post($post->ID);
+
+	return new WP_REST_Response( $employee );
 }
 
 function vd_api_media( WP_REST_Request $request ) {
