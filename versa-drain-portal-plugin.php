@@ -419,7 +419,7 @@ add_action( 'rest_api_init', function () {
 	add_filter( 'rest_pre_serve_request', function( $value ) {
 		header( 'Access-Control-Allow-Origin: *' );
 		header( 'Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, vd-token' );
-		header( 'Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE' );
+		header( 'Access-Control-Allow-Methods: POST, GET, OPTIONS, PATCH, DELETE' );
 		header( 'Access-Control-Allow-Credentials: true' );
 
 		return $value;
@@ -704,7 +704,7 @@ function vd_update_client( WP_REST_Request $request ) {
 		return $response;
 	}
 
-	if($user->type != 'admin') {
+	if($user->ID != $request['id'] && $user->type != 'admin') {
 		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
 		$response->set_status(403);
 		return $response;
@@ -761,7 +761,7 @@ function vd_delete_client( WP_REST_Request $request ) {
 
 	$client = getClientById($post->ID);
 
-	wp_delete_post($post->ID);
+	wp_trash_post($post->ID);
 
 	return new WP_REST_Response( $client );
 }
@@ -842,7 +842,7 @@ function vd_update_employee( WP_REST_Request $request ) {
 		return $response;
 	}
 
-	if($user->type != 'admin') {
+	if($user->ID != $request['id'] && $user->type != 'admin') {
 		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
 		$response->set_status(403);
 		return $response;
@@ -862,8 +862,13 @@ function vd_update_employee( WP_REST_Request $request ) {
 	update_post_meta($post->ID, 'email', $request['email']);
 	update_post_meta($post->ID, 'type', $request['type']);
 
-	if($request["password"])
+	if($request["password"]) {
+		if(!password_verify($request['currentPassword'], get_post_meta($user->ID, 'password', true))) {
+			return new WP_REST_Response( array('error' => 'Incorrect password') );
+		}
+
 		update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
+	}
 
 	if($request['media_id'])
 		set_post_thumbnail($post->ID, $request['media_id']);
@@ -898,7 +903,7 @@ function vd_delete_employee( WP_REST_Request $request ) {
 
 	$employee = getEmployeeById($post->ID);
 
-	wp_delete_post($post->ID);
+	wp_trash_post($post->ID);
 
 	return new WP_REST_Response( $employee );
 }
@@ -948,39 +953,6 @@ function vd_get_me( WP_REST_Request $request ) {
 
 
 	return new WP_REST_Response( $user );
-}
-
-function vd_change_password( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
-
-	if(!$user) {
-		$response = new WP_REST_Response( array('error' => 'Please login') );
-		$response->set_status(403);
-		return $response;
-	}
-
-	if(password_verify($request['currentPassword'], get_post_meta($user->ID, 'password', true))) {
-		update_post_meta($user->ID, "password", password_hash($request["newPassword"], PASSWORD_DEFAULT));
-		return new WP_REST_Response( array('message' => 'Password changed Successfully') );
-	}
-
-	return new WP_REST_Response( array('message' => 'Incorrect password') );
-}
-
-function vd_change_profile_picture( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
-
-	if(!$user) {
-		$response = new WP_REST_Response( array('error' => 'Please login') );
-		$response->set_status(403);
-		return $response;
-	}
-
-	if(!$request['media_id'])
-		return new WP_REST_Response( array('error' => 'No image provided') );
-
-	set_post_thumbnail($user->ID, $request['media_id']);
-	return new WP_REST_Response( $user->post_type == 'employee' ? getEmployeeById($user->ID) : getClientById($user->ID) );
 }
 
 /*------ Metabox Functions --------*/
