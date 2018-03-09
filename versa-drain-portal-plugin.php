@@ -413,6 +413,28 @@ function getClientById( $client_id ) {
 	);
 }
 
+function getReportById( $report_id ) {
+	$employee_id = (int) get_post_meta($report_id, 'employee_id', true);
+	$client_id = (int) get_post_meta($report_id, 'client_id', true);
+
+	$media_urls = array();
+
+	if(get_post_meta($report_id, 'media_ids', true) != "") {
+		$media_ids = explode(";", get_post_meta($report_id, 'media_ids', true));
+	
+		foreach($media_ids as $media_id)
+			array_push($media_urls, wp_get_attachment_image_src($media_id, 'large')[0]);
+	}
+
+	return array(
+		'id' => $report_id,
+		'description' => get_post($report_id)->post_content,
+		'media_urls' => $media_urls,
+		'employee' => getEmployeeById($employee_id),
+		'client' => getClientById($client_id),
+	);
+}
+
 add_action( 'rest_api_init', function () {
 	// CORS
 	remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
@@ -576,14 +598,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		if($employee_id != $user->ID && $client_id != $user->ID && $user->type != 'admin')
 			continue;
 
-		$report = array(
-			'id' => $post->ID,
-			'description' => $post->post_content,
-			'date' => $post->post_date,
-			'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ), 'large')[0],
-			'employee' => getEmployeeById($employee_id),
-			'client' => getClientById($client_id),
-		);
+		$report = getReportById($post->ID);
 
 		array_push($reports, $report);
 	}
@@ -610,19 +625,12 @@ function vd_create_report( WP_REST_Request $request ) {
 	update_post_meta($post->ID, 'client_id', $request['client_id'] ?: $user->ID);
 	update_post_meta($post->ID, 'employee_id', $request['employee_id'] ?: $user->ID);
 
-	if($request['media_id'])
-		set_post_thumbnail($post->ID, $request['media_id']);
+	if($request['media_ids']) {
+		$media_ids = implode(";", $request['media_ids']);
+		update_post_meta($post->ID, 'media_ids', $media_ids);
+	}
 
-	$employee_id = (int) get_post_meta($post->ID, 'employee_id', true);
-	$client_id = (int) get_post_meta($post->ID, 'client_id', true);
-
-	$report = array(
-		'id' => $post->ID,
-		'description' => $post->post_content,
-		'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $post->ID ), 'large')[0],
-		'employee' => getEmployeeById($employee_id),
-		'client' => getClientById($client_id),
-	);
+	$report = getReportById($post->ID);
 
 	return new WP_REST_Response( $report );
 }
