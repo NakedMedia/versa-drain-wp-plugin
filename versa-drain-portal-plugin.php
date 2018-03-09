@@ -931,7 +931,7 @@ function vd_api_media( WP_REST_Request $request ) {
 
     $attachment_id = media_handle_upload( 'file', 0 );
 	    
-    return new WP_REST_Response( array('media_id' => $attachment_id) );	
+    return new WP_REST_Response( array('media_id' => $attachment_id, 'media_link' => wp_get_attachment_image_src($attachment_id, 'large')[0]) );	
 }
 
 function vd_get_me( WP_REST_Request $request ) {
