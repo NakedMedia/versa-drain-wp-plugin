@@ -417,18 +417,20 @@ function getReportById( $report_id ) {
 	$employee_id = (int) get_post_meta($report_id, 'employee_id', true);
 	$client_id = (int) get_post_meta($report_id, 'client_id', true);
 
+	$media_ids = array();
 	$media_urls = array();
 
-	if(get_post_meta($report_id, 'media_ids', true) != "") {
-		$media_ids = explode(";", get_post_meta($report_id, 'media_ids', true));
+	if(get_post_meta($report_id, 'media_ids', true) != null) {
+		$media_ids = array_map('intval', explode(";", get_post_meta($report_id, 'media_ids', true)));
 	
-		foreach($media_ids as $media_id)
+		foreach($media_ids as $media_id) 
 			array_push($media_urls, wp_get_attachment_image_src($media_id, 'large')[0]);
 	}
 
 	return array(
 		'id' => $report_id,
 		'description' => get_post($report_id)->post_content,
+		'media_ids' => $media_ids,
 		'media_urls' => $media_urls,
 		'employee' => getEmployeeById($employee_id),
 		'client' => getClientById($client_id),
@@ -456,6 +458,17 @@ add_action( 'rest_api_init', function () {
 		array(
 			'methods' => 'POST',
 			'callback' => 'vd_create_report',
+		),
+	));
+
+	register_rest_route( 'vd', '/reports/(?P<id>\d+)', array(
+		array(
+			'methods' => 'PATCH',
+			'callback' => 'vd_update_report',
+		),
+		array(
+			'methods' => 'DELETE',
+			'callback' => 'vd_delete_report',
 		),
 	));
 
@@ -535,6 +548,7 @@ add_action( 'rest_api_init', function () {
 });
 
 
+/* ---- General Routes ---- */
 function vd_api_login( WP_REST_Request $request  ) {
 	if(!$request['id'] || !$request['password'])
 		return array('error' => 'Please provide a user ID and password');
@@ -574,6 +588,33 @@ function vd_api_logout( WP_REST_Request $request  ) {
 	return new WP_REST_Response( array('message' => 'Successfully logged out') );
 }
 
+function vd_api_media( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$file = $request->get_file_params();
+
+	require_once( ABSPATH . 'wp-admin/includes/image.php' );
+	require_once( ABSPATH . 'wp-admin/includes/file.php' );
+	require_once( ABSPATH . 'wp-admin/includes/media.php' );
+
+	if (empty($file)) {
+		$response = new WP_REST_Response( array('error' => 'No file provided') );
+		$response->set_status(403);
+		return $response;
+	}
+
+    $attachment_id = media_handle_upload( 'file', 0 );
+	    
+    return new WP_REST_Response( array('media_id' => $attachment_id, 'media_url' => wp_get_attachment_image_src($attachment_id, 'large')[0]) );	
+}
+
+/* ---- Reports Routes ---- */
 function vd_get_user_reports( WP_REST_Request $request  ) {
 	$user = getUserFromToken($request->get_header('vd-token'));
 
@@ -625,16 +666,92 @@ function vd_create_report( WP_REST_Request $request ) {
 	update_post_meta($post->ID, 'client_id', $request['client_id'] ?: $user->ID);
 	update_post_meta($post->ID, 'employee_id', $request['employee_id'] ?: $user->ID);
 
-	if($request['media_ids']) {
+	if(count($request['media_ids']) > 0) {
 		$media_ids = implode(";", $request['media_ids']);
 		update_post_meta($post->ID, 'media_ids', $media_ids);
 	}
+
+	else 
+		update_post_meta($post->ID, 'media_ids', null);
 
 	$report = getReportById($post->ID);
 
 	return new WP_REST_Response( $report );
 }
 
+function vd_update_report( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$post = get_post($request->get_param('id'));
+
+	if(!$post) {
+		$response = new WP_REST_Response( array('error' => 'No report with that ID found') );
+		$response->set_status(404);
+		return $response;
+	}
+
+	wp_update_post(array('ID' => $post->ID, 'post_content' => $request['description']));
+
+	update_post_meta($post->ID, 'client_id', $request['client_id']);
+	update_post_meta($post->ID, 'employee_id', $request['employee_id']);
+
+
+	if(count($request['media_ids']) > 0) {
+		$media_ids = implode(";", $request['media_ids']);
+		update_post_meta($post->ID, 'media_ids', $media_ids);
+	}
+
+	else 
+		update_post_meta($post->ID, 'media_ids', null);
+
+	$report = getReportById($post->ID);
+
+	return new WP_REST_Response( $report );
+}
+
+function vd_delete_report( WP_REST_Request $request ) {
+	$user = getUserFromToken($request->get_header('vd-token'));
+
+	if(!$user) {
+		$response = new WP_REST_Response( array('error' => 'Please login') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	if($user->type != 'admin') {
+		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
+		$response->set_status(403);
+		return $response;
+	}
+
+	$post = get_post($request->get_param('id'));
+
+	if(!$post) {
+		$response = new WP_REST_Response( array('error' => 'No report with that ID found') );
+		$response->set_status(404);
+		return $response;
+	}
+
+	$report = getReportById($post->ID);
+
+	wp_trash_post($post->ID);
+
+	return new WP_REST_Response( $report );
+}
+
+/* ---- Clients Routes ---- */
 function vd_get_clients( WP_REST_Request $request  ) {
 	$user = getUserFromToken($request->get_header('vd-token'));
 
@@ -774,6 +891,7 @@ function vd_delete_client( WP_REST_Request $request ) {
 	return new WP_REST_Response( $client );
 }
 
+/* ---- Employees Routes ---- */
 function vd_get_employees( WP_REST_Request $request  ) {
 	$user = getUserFromToken($request->get_header('vd-token'));
 
@@ -916,32 +1034,7 @@ function vd_delete_employee( WP_REST_Request $request ) {
 	return new WP_REST_Response( $employee );
 }
 
-function vd_api_media( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
-
-	if(!$user) {
-		$response = new WP_REST_Response( array('error' => 'Please login') );
-		$response->set_status(403);
-		return $response;
-	}
-
-	$file = $request->get_file_params();
-
-	require_once( ABSPATH . 'wp-admin/includes/image.php' );
-	require_once( ABSPATH . 'wp-admin/includes/file.php' );
-	require_once( ABSPATH . 'wp-admin/includes/media.php' );
-
-	if (empty($file)) {
-		$response = new WP_REST_Response( array('error' => 'No file provided') );
-		$response->set_status(403);
-		return $response;
-	}
-
-    $attachment_id = media_handle_upload( 'file', 0 );
-	    
-    return new WP_REST_Response( array('media_id' => $attachment_id, 'media_url' => wp_get_attachment_image_src($attachment_id, 'large')[0]) );	
-}
-
+/* ---- User Routes ---- */
 function vd_get_me( WP_REST_Request $request ) {
 	$user = getUserFromToken($request->get_header('vd-token'));
 
