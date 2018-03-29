@@ -707,6 +707,24 @@ function vd_create_report( WP_REST_Request $request ) {
 
 	wp_mail($emailto, $subject, $messagebody, $headers, $attachments);
 
+	$args = array(
+		'posts_per_page'   => -1,
+		'post_type'        => 'employee',
+		'post_status'      => 'publish',
+	);
+
+	$admins = [];
+
+	foreach (get_posts($args) as $post) {
+		$employee = getEmployeeById($post->ID);
+		
+		if($employee["type"] == 'admin')
+			array_push($admins, $employee);
+	}
+
+	foreach ($admins as $admin)
+			wp_mail($admin["email"], $subject, $messagebody, $headers, $attachments);
+
 	return new WP_REST_Response( $report );
 }
 
