@@ -799,6 +799,7 @@ function vd_create_client( WP_REST_Request $request ) {
 	}
 
 	$postarr = array(
+		'import_id' => $request['id'],
 		'post_title' => $request['name'],
 		'post_status' => 'publish',
 		'post_type' => 'client'
