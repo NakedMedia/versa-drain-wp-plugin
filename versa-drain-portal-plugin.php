@@ -686,6 +686,7 @@ function vd_create_report( WP_REST_Request $request ) {
 	$subject = 'New Report Submitted For ' . $report['client']['name'];
 	$messagebody = 
 		'<p>Client ID: ' . $report['client']['id'] . '<br/>'.
+		'<p>Client Name: ' . $report['client']['name'] . '<br/>'.
 		'Technician Name: ' . $report['employee']['name'] . '<br/>'.
 		'Date: ' . get_the_date('l, F j, Y', $report['id']) . '<br/>'.
 		'Time: ' . get_the_date('g:i A', $report['id']) . '</p>'.
