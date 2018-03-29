@@ -685,9 +685,11 @@ function vd_create_report( WP_REST_Request $request ) {
 	$fromname = 'Versa Drain';
 	$subject = 'New Report Submitted For ' . $report['client']['name'];
 	$messagebody = 
-		'<p>A Versa Drain technician has submitted a report summarizing their visit to your location.</p>' .
-		'<strong>Here is what was submitted: </strong>' .
-		'<p>' . $report['description'] . '</p>';
+		'<p>Client ID: ' . $report['client']['id'] . '<br/>'.
+		'Technician Name: ' . $report['employee']['name'] . '<br/>'.
+		'Date: ' . get_the_date('l, F j, Y', $report['id']) . '<br/>'.
+		'Time: ' . get_the_date('g:i A', $report['id']) . '</p>'.
+		'<p>Job Notes: <br/>' . $report['description'] .'</p>';
 	$headers = 
 		'Return-Path: ' . $emailfrom . "\r\n" . 
 		'From: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" . 
@@ -696,10 +698,14 @@ function vd_create_report( WP_REST_Request $request ) {
 		'Reply-To: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" .
 		'MIME-Version: 1.0' . "\r\n" . 
 		'Content-Transfer-Encoding: 8bit' . "\r\n" . 
-		'Content-Type: text/plain; charset=UTF-8' . "\r\n";
-	$params = '-f ' . $emailfrom;
+		'Content-Type: text/html; charset=UTF-8' . "\r\n";
 	
-	wp_mail($emailto, $subject, $messagebody, $headers, $params);
+	$attachments = array();
+
+	foreach ($report['media_ids'] as $media_id)
+		array_push($attachments, get_attached_file($media_id, false));
+
+	wp_mail($emailto, $subject, $messagebody, $headers, $attachments);
 
 	return new WP_REST_Response( $report );
 }
