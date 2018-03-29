@@ -427,9 +427,12 @@ function getReportById( $report_id ) {
 			array_push($media_urls, wp_get_attachment_image_src($media_id, 'large')[0]);
 	}
 
+	$post = get_post($report_id);
+
 	return array(
 		'id' => $report_id,
-		'description' => get_post($report_id)->post_content,
+		'description' => $post->post_content,
+		'date' => $post->post_date,
 		'media_ids' => $media_ids,
 		'media_urls' => $media_urls,
 		'employee' => getEmployeeById($employee_id),
@@ -675,6 +678,28 @@ function vd_create_report( WP_REST_Request $request ) {
 		update_post_meta($post->ID, 'media_ids', null);
 
 	$report = getReportById($post->ID);
+
+	$emailto = $report['client']['contact_email'];
+	$toname = $report['client']['name'];
+	$emailfrom = 'info@versadrain.com';
+	$fromname = 'Versa Drain';
+	$subject = 'New Report Submitted For ' . $report['client']['name'];
+	$messagebody = 
+		'<p>A Versa Drain technician has submitted a report summarizing their visit to your location.</p>' .
+		'<strong>Here is what was submitted: </strong>' .
+		'<p>' . $report['description'] . '</p>';
+	$headers = 
+		'Return-Path: ' . $emailfrom . "\r\n" . 
+		'From: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" . 
+		'X-Priority: 3' . "\r\n" . 
+		'X-Mailer: PHP ' . phpversion() .  "\r\n" . 
+		'Reply-To: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" .
+		'MIME-Version: 1.0' . "\r\n" . 
+		'Content-Transfer-Encoding: 8bit' . "\r\n" . 
+		'Content-Type: text/plain; charset=UTF-8' . "\r\n";
+	$params = '-f ' . $emailfrom;
+	
+	wp_mail($emailto, $subject, $messagebody, $headers, $params);
 
 	return new WP_REST_Response( $report );
 }
