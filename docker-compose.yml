@@ -1,0 +1,26 @@
+version: '3.1'
+
+services:
+
+  wordpress:
+    image: wordpress
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      WORDPRESS_DB_PASSWORD: root
+    volumes:
+      - wordpress_files:/var/www/html
+      - ./:/var/www/html/wp-content/plugins/X
+
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes: 
+      - wordpress_data:/var/lib/mysql
+
+volumes:
+    wordpress_files:
+    wordpress_data:

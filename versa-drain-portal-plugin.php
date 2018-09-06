@@ -1040,11 +1040,14 @@ function vd_update_employee( WP_REST_Request $request ) {
 	update_post_meta($post->ID, 'type', $request['type']);
 
 	if($request["password"]) {
-		if(!password_verify($request['currentPassword'], get_post_meta($user->ID, 'password', true))) {
+		if($user->type == 'admin' || password_verify($request['currentPassword'], get_post_meta($user->ID, 'password', true))) {
+			update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
+		}
+		else {
 			return new WP_REST_Response( array('error' => 'Incorrect password') );
 		}
 
-		update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
+		
 	}
 
 	if($request['media_id'])
