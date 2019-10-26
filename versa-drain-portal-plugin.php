@@ -811,12 +811,6 @@ function vd_get_clients( WP_REST_Request $request  ) {
 		return $response;
 	}
 
-	if($user->type != 'admin') {
-		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
-		$response->set_status(403);
-		return $response;
-	}
-
 	$args = array(
 		'posts_per_page'   => -1,
 		'post_type'        => 'client',
@@ -948,12 +942,6 @@ function vd_get_employees( WP_REST_Request $request  ) {
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
-		$response->set_status(403);
-		return $response;
-	}
-
-	if($user->type != 'admin') {
-		$response = new WP_REST_Response( array('error' => 'You must be an admin to access this data') );
 		$response->set_status(403);
 		return $response;
 	}
