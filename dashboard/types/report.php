@@ -34,7 +34,7 @@ function create_report_metaboxes() {
 
 function render_report_field_view() {
 	global $post;
-  $custom = get_post_custom($post->ID);
+  $custom = get_custom_fields($post->ID, array('employee_id', 'client_id'));
 
   include_once(__DIR__ . '/../views/report.php');
 }
@@ -58,7 +58,7 @@ add_action( 'manage_report_posts_custom_column', 'get_report_column_data', 10, 2
 function get_report_column_data( $column, $post_id ) {
 	global $post;
 
-	$custom = get_post_custom($post_id);
+	$custom = get_custom_fields($post_id, array('client_id', 'employee_id'));
 
 	switch( $column ) {
 
@@ -71,11 +71,11 @@ function get_report_column_data( $column, $post_id ) {
 			break;
 
 		case 'client':
-			echo get_post($custom['client_id'][0])->post_title;
+			echo get_post($custom['client_id'])->post_title;
 			break;
 
 		case 'employee':
-			echo get_post($custom['employee_id'][0])->post_title;
+			echo get_post($custom['employee_id'])->post_title;
 			break;
 
 		default :
@@ -121,10 +121,14 @@ add_action('save_post', 'save_report', 20, 2);
 function save_report($post_id, $post) {
 	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || $post->post_status == 'auto-draft' ) return $post_id;
 	
-	if ( $post->post_type != 'report' ) return $post_id;
+	if ( $post->post_type != 'report' || get_post_status($post_id) == 'trash' ) return $post_id;
 
-	update_post_meta($post->ID, "client_id", $_POST["client_id"]);
-	update_post_meta($post->ID, "employee_id", $_POST["employee_id"]);
+	$updated_fields = array(
+		'client_id' => $_POST["client_id"],
+		'employee_id' => $_POST["employee_id"],
+	);
+
+	set_custom_fields($post_id, $updated_fields);
 }
 
 ?>

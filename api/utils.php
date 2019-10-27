@@ -13,6 +13,8 @@ function generateRandomString($length = 10) {
 }
 
 function getUserFromToken( $token ) {
+  if(!$token) return null;
+
   $users = get_posts(
     array(
       'posts_per_page' => -1,

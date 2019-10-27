@@ -1,10 +1,4 @@
 <?php 
-	$employee_query = new WP_Query(array(
-	    'post_type' => 'employee',
-	    'post_status' => 'publish',
-	    'posts_per_page' => -1
-	));
-
 	$client_query = new WP_Query(array(
 	    'post_type' => 'client',
 	    'post_status' => 'publish',
@@ -13,20 +7,9 @@
 ?>
 
 <div class="inner-meta">
-	<label>Employee:</label>
+	<label>Address: </label>
 	<br/>
-	<select name="employee_id" id="employee_id">
-		<?php
-
-			while ($employee_query->have_posts()) {
-			    $employee_query->the_post();
-			    $post_id = get_the_ID();
-			    $name = get_the_title();
-			    echo '<option value="', $post->ID, '"', $custom['employee_id'] == $post_id ? ' selected="selected"' : '', '>', $name, '</option>';
-			}
-
-		?>
-	</select>
+	<input type="text" name="address" size="60" placeholder="ex: 1600 Amphitheatre Parkway Mountain View, CA 94043" value="<?= $custom['address']?>"/>
 	<br/>
 	<br/>
 

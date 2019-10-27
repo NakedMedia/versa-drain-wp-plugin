@@ -18,7 +18,7 @@ function client_create_type() {
 		'show_in_rest' => false,
 		'hierarchical' => false,
 		'rewrite' => array('slug' => 'clients'),
-		'menu_icon'  => 'dashicons-store',
+		'menu_icon'  => 'dashicons-groups',
 		'query_var' => true,
 		'supports' => array('title', 'thumbnail')
 	);
@@ -35,14 +35,14 @@ function create_client_metaboxes() {
 
 function render_client_field_view() {
 	global $post;
-  $custom = get_post_custom($post->ID);
+  $custom = get_custom_fields($post->ID, array('address', 'contact_name', 'contact_email', 'contact_phone'));
 
   include_once(__DIR__ . '/../views/client.php');
 }
 
 function render_client_password_view() {
 	global $post;
-  $custom = get_post_custom($post->ID);
+  $custom = get_custom_fields($post->ID, array('password'));
 
   include_once(__DIR__ . '/../views/password.php');
 }
@@ -67,7 +67,7 @@ add_action( 'manage_client_posts_custom_column', 'get_client_column_data', 10, 2
 function get_client_column_data( $column, $post_id ) {
 	global $post;
 
-	$custom = get_post_custom($post_id);
+	$custom = get_custom_fields($post_id, array('address', 'contact_email', 'contact_phone'));
 
 	switch( $column ) {
 
@@ -76,15 +76,15 @@ function get_client_column_data( $column, $post_id ) {
 			break;
 
 		case 'address':
-			echo $custom['address'][0] ?: '--';
+			echo $custom['address'] ?: '--';
 			break;
 
 		case 'contact_email':
-			echo $custom['contact_email'][0] ?: '--';
+			echo $custom['contact_email'] ?: '--';
 			break;
 
 		case 'contact_phone':
-			echo $custom['contact_phone'][0] ?: '--';
+			echo $custom['contact_phone'] ?: '--';
 			break;
 
 		default :
@@ -140,7 +140,7 @@ add_action('save_post', 'save_client', 20, 2);
 function save_client( $post_id, $post ) {
 	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || $post->post_status == 'auto-draft' ) return $post_id;
 
-	if($post->post_type != 'client') return $post_id;
+	if( $post->post_type != 'client' || get_post_status($post_id) == 'trash' ) return $post_id;
 
 	$password = $_POST['password'];
 	$confirm_password = $_POST['confirm_password'];
@@ -160,14 +160,19 @@ function save_client( $post_id, $post ) {
 		}
 	}
 
+	$updated_fields = array(
+		'address' => $_POST['address'],
+		'contact_name' => $_POST['contact_name'],
+		'contact_email' => $_POST['contact_email'],
+		'contact_phone' => $_POST['contact_phone']
+	);
+
 	if(array_key_exists('password', $_POST) && $_POST['password'] != '') {
-		update_post_meta($post->ID, "password", password_hash($_POST["password"], PASSWORD_DEFAULT));	
+		$updated_fields['password'] = password_hash($_POST["password"], PASSWORD_DEFAULT);
 	}
 
-	update_post_meta($post->ID, "address", $_POST["address"]);
-	update_post_meta($post->ID, "contact_name", $_POST["contact_name"]);
-	update_post_meta($post->ID, "contact_email", $_POST["contact_email"]);
-	update_post_meta($post->ID, "contact_phone", $_POST["contact_phone"]);
+	set_custom_fields($post_id, $updated_fields);
+
 }
 
 ?>

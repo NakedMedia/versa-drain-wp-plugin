@@ -35,14 +35,14 @@ function create_employee_metaboxes() {
 
 function render_employee_field_view() {
 	global $post;
-  $custom = get_post_custom($post->ID);
+  $custom = get_custom_fields($post->ID, array('email', 'phone', 'type'));
 
   include_once(__DIR__ . '/../views/employee.php');
 }
 
 function render_employee_password_view() {
 	global $post;
-  $custom = get_post_custom($post->ID);
+  $custom = get_custom_fields($post->ID, array('password'));
 
   include_once(__DIR__ . '/../views/password.php');
 }
@@ -67,7 +67,7 @@ add_action( 'manage_employee_posts_custom_column', 'get_employee_column_data', 1
 function get_employee_column_data( $column, $post_id ) {
 	global $post;
 
-	$custom = get_post_custom($post_id);
+	$custom = get_custom_fields($post_id, array('email', 'phone', 'type'));
 
 	switch( $column ) {
 
@@ -76,15 +76,15 @@ function get_employee_column_data( $column, $post_id ) {
 			break;
 
 		case 'email':
-			echo $custom['email'][0] ?: '--';
+			echo $custom['email'] ?: '--';
 			break;
 
 		case 'phone':
-			echo $custom['phone'][0] ?: '--';
+			echo $custom['phone'] ?: '--';
 			break;
 
 		case 'type':
-			echo ucfirst($custom['type'][0]);
+			echo ucfirst($custom['type']);
 			break;
 
 		default :
@@ -140,7 +140,7 @@ add_action('save_post', 'save_employee', 20, 2);
 function save_employee($post_id, $post) {
 	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || $post->post_status == 'auto-draft' ) return $post_id;
 	
-	if ( $post->post_type != 'employee' ) return $post_id;
+	if ( $post->post_type != 'employee' || get_post_status($post_id) == 'trash' ) return $post_id;
 
 	$password = $_POST['password'];
 	$confirm_password = $_POST['confirm_password'];
@@ -160,12 +160,16 @@ function save_employee($post_id, $post) {
 		}
 	}
 
-	if(array_key_exists('password', $_POST) && $_POST['password'] != '')
-		update_post_meta($post->ID, "password", password_hash($_POST["password"], PASSWORD_DEFAULT));	
+	$update_fields = array(
+		'email' => $_POST["email"],
+		'phone' => $_POST["phone"],
+		'type' => $_POST["type"]
+	);
 
-	update_post_meta($post->ID, "email", $_POST["email"]);
-	update_post_meta($post->ID, "phone", $_POST["phone"]);
-	update_post_meta($post->ID, "type", $_POST["type"]);
+	if(array_key_exists('password', $_POST) && $_POST['password'] != '')
+		$update_fields["password"] = password_hash($_POST["password"], PASSWORD_DEFAULT);	
+
+	set_custom_fields($post_id, $update_fields);
 }
 
 ?>
