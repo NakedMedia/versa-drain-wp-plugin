@@ -37,14 +37,14 @@ function render_client_field_view() {
 	global $post;
   $custom = get_post_custom($post->ID);
 
-  include_once('views/client.php');
+  include_once(__DIR__ . '/../views/client.php');
 }
 
 function render_client_password_view() {
 	global $post;
   $custom = get_post_custom($post->ID);
 
-  include_once('views/password.php');
+  include_once(__DIR__ . '/../views/password.php');
 }
 
 // Set dashboard list columns
@@ -133,6 +133,41 @@ function set_client_title( $title ) {
   }
 
   return $title;
+}
+
+// On client save
+add_action('save_post', 'save_client', 20, 2);
+function save_client( $post_id, $post ) {
+	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || $post->post_status == 'auto-draft' ) return $post_id;
+
+	if($post->post_type != 'client') return $post_id;
+
+	$password = $_POST['password'];
+	$confirm_password = $_POST['confirm_password'];
+
+	$password_match = $password == '' || $password == $confirm_password;
+
+	if ( ( isset( $_POST['publish'] ) || isset( $_POST['save'] ) ) && $_POST['post_status'] == 'publish' ) {
+		if ( !$password_match ) {
+			global $wpdb;
+			$wpdb->update( $wpdb->posts, array( 'post_status' => 'pending' ), array( 'ID' => $post_id ) );
+
+			add_filter( 'redirect_post_location', function( $location ) {
+				return add_query_arg("message", "5", $location);
+			} );
+			
+			return $post_id;
+		}
+	}
+
+	if(array_key_exists('password', $_POST) && $_POST['password'] != '') {
+		update_post_meta($post->ID, "password", password_hash($_POST["password"], PASSWORD_DEFAULT));	
+	}
+
+	update_post_meta($post->ID, "address", $_POST["address"]);
+	update_post_meta($post->ID, "contact_name", $_POST["contact_name"]);
+	update_post_meta($post->ID, "contact_email", $_POST["contact_email"]);
+	update_post_meta($post->ID, "contact_phone", $_POST["contact_phone"]);
 }
 
 ?>

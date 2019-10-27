@@ -36,7 +36,7 @@ function render_report_field_view() {
 	global $post;
   $custom = get_post_custom($post->ID);
 
-  include_once('views/report.php');
+  include_once(__DIR__ . '/../views/report.php');
 }
 
 // Set dashboard list columns
@@ -114,6 +114,17 @@ function set_report_update_messages( $messages ) {
 	);
 
 	return $messages;
+}
+
+// On report save
+add_action('save_post', 'save_report', 20, 2);
+function save_report($post_id, $post) {
+	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || $post->post_status == 'auto-draft' ) return $post_id;
+	
+	if ( $post->post_type != 'report' ) return $post_id;
+
+	update_post_meta($post->ID, "client_id", $_POST["client_id"]);
+	update_post_meta($post->ID, "employee_id", $_POST["employee_id"]);
 }
 
 ?>
