@@ -34,7 +34,7 @@ function create_report_metaboxes() {
 
 function render_report_field_view() {
 	global $post;
-  $custom = get_custom_fields($post->ID, array('employee_id', 'client_id'));
+  $custom = get_custom_fields($post->ID, array('employee_id', 'client_id', 'location_id'));
 
   include_once(__DIR__ . '/../views/report.php');
 }
@@ -46,8 +46,9 @@ function set_report_columns( $columns ) {
 		'cb' => '<input type="checkbox" />',
 		'id' => __('ID'),
 		'description' => __( 'Description' ),
-		'client' => __( 'Client' ),
 		'employee' => __('Employee'),
+		'client' => __( 'Client' ),
+		'location' => __( 'Location' )
 	);
 
 	return $columns;
@@ -58,7 +59,7 @@ add_action( 'manage_report_posts_custom_column', 'get_report_column_data', 10, 2
 function get_report_column_data( $column, $post_id ) {
 	global $post;
 
-	$custom = get_custom_fields($post_id, array('client_id', 'employee_id'));
+	$custom = get_custom_fields($post_id, array('employee_id', 'client_id', 'location_id'));
 
 	switch( $column ) {
 
@@ -70,12 +71,16 @@ function get_report_column_data( $column, $post_id ) {
 			echo '<a href='.get_edit_post_link($post->ID).'>'.$post->post_content.'</a>';
 			break;
 
+		case 'employee':
+			echo get_post($custom['employee_id'])->post_title;
+			break;
+
 		case 'client':
 			echo get_post($custom['client_id'])->post_title;
 			break;
 
-		case 'employee':
-			echo get_post($custom['employee_id'])->post_title;
+		case 'location':
+			echo $custom['location_id'] ? get_post($custom['location_id'])->post_title : '--';
 			break;
 
 		default :
@@ -126,6 +131,7 @@ function save_report($post_id, $post) {
 	$updated_fields = array(
 		'client_id' => $_POST["client_id"],
 		'employee_id' => $_POST["employee_id"],
+		'location_id' => isset($_POST["location_id"]) ? $_POST["location_id"] : null
 	);
 
 	set_custom_fields($post_id, $updated_fields);
