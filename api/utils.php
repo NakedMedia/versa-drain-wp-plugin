@@ -58,7 +58,8 @@ function get_location_by_id( $location_id ) {
     'address' => get_post_meta($location_id, 'address', true),
     'client_id' => get_post_meta($location_id, 'client_id', true),
     'email' => get_post_meta($location_id, 'email', true),
-    'phone' => get_post_meta($location_id, 'phone', true)
+    'phone' => get_post_meta($location_id, 'phone', true),
+    'contact_name' => get_post_meta($location_id, 'contact_name', true),
   );
 }
 

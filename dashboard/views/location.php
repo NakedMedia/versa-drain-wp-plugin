@@ -41,4 +41,10 @@
 	<input type="text" name="phone" size="20" placeholder="ex: 888-123-4567" value="<?= $custom['phone'] ?>"/>
 	<br/>
 	<br/>
+
+	<label>Contact Name: </label>
+	<br/>
+	<input type="text" name="contact_name" size="20" placeholder="ex: John Smith" value="<?= $custom['contact_name'] ?>"/>
+	<br/>
+	<br/>
 </div>
