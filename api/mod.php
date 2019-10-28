@@ -20,6 +20,7 @@ require 'utils.php';
 require 'routes/auth.php';
 require 'routes/client.php';
 require 'routes/employee.php';
+require 'routes/location.php';
 require 'routes/media.php';
 require 'routes/report.php';
 require 'routes/user.php';

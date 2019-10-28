@@ -55,6 +55,15 @@ function getClientById( $client_id ) {
   );
 }
 
+function getLocationById( $location_id ) {
+  return array(
+    'id' => $location_id,
+    'name' => get_post($location_id)->post_title,
+    'address' => get_post_meta($location_id, 'address', true),
+    'client_id' => get_post_meta($location_id, 'client_id', true)
+  );
+}
+
 function getReportById( $report_id ) {
   $employee_id = (int) get_post_meta($report_id, 'employee_id', true);
   $client_id = (int) get_post_meta($report_id, 'client_id', true);
