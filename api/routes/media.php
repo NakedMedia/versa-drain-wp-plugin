@@ -2,7 +2,7 @@
 
 /* ---- Route Callbacks ---- */
 function vd_api_media( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );

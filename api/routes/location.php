@@ -2,7 +2,7 @@
 
 /* ---- Route Callbacks ---- */
 function vd_get_locations( WP_REST_Request $request  ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -19,7 +19,7 @@ function vd_get_locations( WP_REST_Request $request  ) {
 	$locations = [];
 
 	foreach (get_posts($args) as $post) {
-		$location = getLocationById($post->ID);
+		$location = get_location_by_id($post->ID);
 		array_push($locations, $location);
 	}
 
@@ -27,7 +27,7 @@ function vd_get_locations( WP_REST_Request $request  ) {
 }
 
 function vd_create_location( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -52,13 +52,13 @@ function vd_create_location( WP_REST_Request $request ) {
 	update_post_meta($post->ID, 'address', $request['address']);
 	update_post_meta($post->ID, 'client_id', $request['client_id']);
 
-	$location = getLocationById($post->ID);
+	$location = get_location_by_id($post->ID);
 
 	return new WP_REST_Response( $location );
 }
 
 function vd_update_location( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -85,13 +85,13 @@ function vd_update_location( WP_REST_Request $request ) {
 	update_post_meta($post->ID, 'address', $request['address']);
 	update_post_meta($post->ID, 'client_id', $request['client_id']);
 
-	$location = getLocationById($post->ID);
+	$location = get_location_by_id($post->ID);
 
 	return new WP_REST_Response( $location );
 }
 
 function vd_delete_location( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -113,7 +113,7 @@ function vd_delete_location( WP_REST_Request $request ) {
 		return $response;
 	}
 
-	$location = getLocationById($post->ID);
+	$location = get_location_by_id($post->ID);
 
 	wp_trash_post($post->ID);
 

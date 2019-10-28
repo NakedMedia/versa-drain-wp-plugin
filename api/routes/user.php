@@ -2,7 +2,7 @@
 
 /* ---- Route Callbacks ---- */
 function vd_get_me( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -11,11 +11,11 @@ function vd_get_me( WP_REST_Request $request ) {
 	}
 
 	if($user->post_type == 'employee') {
-		$user = getEmployeeById($user->ID);
+		$user = get_employee_by_id($user->ID);
 	}
 
 	if($user->post_type == 'client') {
-		$user = getClientById($user->ID);
+		$user = get_client_by_id($user->ID);
 	}
 
 

@@ -16,7 +16,7 @@ function vd_api_login( WP_REST_Request $request  ) {
 			$user->ID == $request['id'] && 
 			password_verify($request['password'], get_post_meta($user->ID, 'password', true))
 		) {
-			$token = JWT::encode(array('id' => $user->ID), generateRandomString(5));
+			$token = JWT::encode(array('id' => $user->ID), generate_random_string(5));
 
 			update_post_meta($user->ID, 'token', $token);
 			return new WP_REST_Response( array('token' => $token) );
@@ -27,7 +27,7 @@ function vd_api_login( WP_REST_Request $request  ) {
 }
 
 function vd_api_logout( WP_REST_Request $request  ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );

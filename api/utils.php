@@ -1,6 +1,6 @@
 <?php
 
-function generateRandomString($length = 10) {
+function generate_random_string($length = 10) {
   $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   $charactersLength = strlen($characters);
   $randomString = '';
@@ -12,7 +12,7 @@ function generateRandomString($length = 10) {
   return $randomString;
 }
 
-function getUserFromToken( $token ) {
+function get_user_from_token( $token ) {
   if(!$token) return null;
 
   $users = get_posts(
@@ -31,7 +31,7 @@ function getUserFromToken( $token ) {
   return null;
 }
 
-function getEmployeeById( $employee_id ) {
+function get_employee_by_id( $employee_id ) {
   return array(
     'id' => $employee_id,
     'name' => get_post($employee_id)->post_title,
@@ -42,7 +42,7 @@ function getEmployeeById( $employee_id ) {
   );
 }
 
-function getClientById( $client_id ) {
+function get_client_by_id( $client_id ) {
   return array(
     'id' => $client_id,
     'name' => get_post($client_id)->post_title,
@@ -55,7 +55,7 @@ function getClientById( $client_id ) {
   );
 }
 
-function getLocationById( $location_id ) {
+function get_location_by_id( $location_id ) {
   return array(
     'id' => $location_id,
     'name' => get_post($location_id)->post_title,
@@ -64,7 +64,7 @@ function getLocationById( $location_id ) {
   );
 }
 
-function getReportById( $report_id ) {
+function get_report_by_id( $report_id ) {
   $employee_id = (int) get_post_meta($report_id, 'employee_id', true);
   $client_id = (int) get_post_meta($report_id, 'client_id', true);
 
@@ -86,8 +86,8 @@ function getReportById( $report_id ) {
     'date' => $post->post_date,
     'media_ids' => $media_ids,
     'media_urls' => $media_urls,
-    'employee' => getEmployeeById($employee_id),
-    'client' => getClientById($client_id),
+    'employee' => get_employee_by_id($employee_id),
+    'client' => get_client_by_id($client_id),
   );
 }
 

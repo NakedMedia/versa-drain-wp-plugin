@@ -2,7 +2,7 @@
 
 /* ---- Route Callbacks ---- */
 function vd_get_employees( WP_REST_Request $request  ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -19,7 +19,7 @@ function vd_get_employees( WP_REST_Request $request  ) {
 	$employees = [];
 
 	foreach (get_posts($args) as $post) {
-		$employee = getEmployeeById($post->ID);
+		$employee = get_employee_by_id($post->ID);
 		array_push($employees, $employee);
 	}
 
@@ -27,7 +27,7 @@ function vd_get_employees( WP_REST_Request $request  ) {
 }
 
 function vd_create_employee( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -57,13 +57,13 @@ function vd_create_employee( WP_REST_Request $request ) {
 	if($request['media_id'])
 		set_post_thumbnail($post->ID, $request['media_id']);
 
-	$employee = getEmployeeById($post->ID);
+	$employee = get_employee_by_id($post->ID);
 
 	return new WP_REST_Response( $employee );
 }
 
 function vd_update_employee( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -105,13 +105,13 @@ function vd_update_employee( WP_REST_Request $request ) {
 	if($request['media_id'])
 		set_post_thumbnail($post->ID, $request['media_id']);
 
-	$employee = getEmployeeById($post->ID);
+	$employee = get_employee_by_id($post->ID);
 
 	return new WP_REST_Response( $employee );
 }
 
 function vd_delete_employee( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -133,7 +133,7 @@ function vd_delete_employee( WP_REST_Request $request ) {
 		return $response;
 	}
 
-	$employee = getEmployeeById($post->ID);
+	$employee = get_employee_by_id($post->ID);
 
 	wp_trash_post($post->ID);
 

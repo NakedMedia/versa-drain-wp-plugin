@@ -2,7 +2,7 @@
 
 /* ---- Route Callbacks ---- */
 function vd_get_clients( WP_REST_Request $request  ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -19,7 +19,7 @@ function vd_get_clients( WP_REST_Request $request  ) {
 	$clients = [];
 
 	foreach (get_posts($args) as $post) {
-		$client = getClientById($post->ID);
+		$client = get_client_by_id($post->ID);
 		array_push($clients, $client);
 	}
 
@@ -27,7 +27,7 @@ function vd_get_clients( WP_REST_Request $request  ) {
 }
 
 function vd_create_client( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -59,13 +59,13 @@ function vd_create_client( WP_REST_Request $request ) {
 	if($request['media_id'])
 		set_post_thumbnail($post->ID, $request['media_id']);
 
-	$client = getClientById($post->ID);
+	$client = get_client_by_id($post->ID);
 
 	return new WP_REST_Response( $client );
 }
 
 function vd_update_client( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -100,13 +100,13 @@ function vd_update_client( WP_REST_Request $request ) {
 	if($request['media_id'])
 		set_post_thumbnail($post->ID, $request['media_id']);
 
-	$client = getClientById($post->ID);
+	$client = get_client_by_id($post->ID);
 
 	return new WP_REST_Response( $client );
 }
 
 function vd_delete_client( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -128,7 +128,7 @@ function vd_delete_client( WP_REST_Request $request ) {
 		return $response;
 	}
 
-	$client = getClientById($post->ID);
+	$client = get_client_by_id($post->ID);
 
 	wp_trash_post($post->ID);
 

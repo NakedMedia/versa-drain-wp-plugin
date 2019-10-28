@@ -2,7 +2,7 @@
 
 /* ---- Route Callbacks ---- */
 function vd_get_user_reports( WP_REST_Request $request  ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -25,7 +25,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		if($employee_id != $user->ID && $client_id != $user->ID && $user->type != 'admin')
 			continue;
 
-		$report = getReportById($post->ID);
+		$report = get_report_by_id($post->ID);
 
 		array_push($reports, $report);
 	}
@@ -34,7 +34,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 }
 
 function vd_create_report( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -60,7 +60,7 @@ function vd_create_report( WP_REST_Request $request ) {
 	else 
 		update_post_meta($post->ID, 'media_ids', null);
 
-	$report = getReportById($post->ID);
+	$report = get_report_by_id($post->ID);
 
 	$emailto = $report['client']['contact_email'];
 	$toname = $report['client']['name'];
@@ -100,7 +100,7 @@ function vd_create_report( WP_REST_Request $request ) {
 	$admins = [];
 
 	foreach (get_posts($args) as $post) {
-		$employee = getEmployeeById($post->ID);
+		$employee = get_employee_by_id($post->ID);
 		
 		if($employee["type"] == 'admin')
 			array_push($admins, $employee);
@@ -113,7 +113,7 @@ function vd_create_report( WP_REST_Request $request ) {
 }
 
 function vd_update_report( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -149,13 +149,13 @@ function vd_update_report( WP_REST_Request $request ) {
 	else 
 		update_post_meta($post->ID, 'media_ids', null);
 
-	$report = getReportById($post->ID);
+	$report = get_report_by_id($post->ID);
 
 	return new WP_REST_Response( $report );
 }
 
 function vd_delete_report( WP_REST_Request $request ) {
-	$user = getUserFromToken($request->get_header('vd-token'));
+	$user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -177,7 +177,7 @@ function vd_delete_report( WP_REST_Request $request ) {
 		return $response;
 	}
 
-	$report = getReportById($post->ID);
+	$report = get_report_by_id($post->ID);
 
 	wp_trash_post($post->ID);
 
