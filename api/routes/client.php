@@ -49,10 +49,6 @@ function vd_create_client( WP_REST_Request $request ) {
 	);
 
 	$post = get_post(wp_insert_post($postarr));
-	update_post_meta($post->ID, 'address', $request['address']);
-	update_post_meta($post->ID, 'contact_name', $request['contact_name']);
-	update_post_meta($post->ID, 'contact_email', $request['contact_email']);
-	update_post_meta($post->ID, 'contact_phone', $request['contact_phone']);
 	update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));
 	update_post_meta($post->ID, 'token', "NONE");
 
@@ -88,11 +84,6 @@ function vd_update_client( WP_REST_Request $request ) {
 	}
 
 	wp_update_post(array('ID' => $post->ID, 'post_title' => $request['name']));
-
-	update_post_meta($post->ID, 'address', $request['address']);
-	update_post_meta($post->ID, 'contact_name', $request['contact_name']);
-	update_post_meta($post->ID, 'contact_email', $request['contact_email']);
-	update_post_meta($post->ID, 'contact_phone', $request['contact_phone']);
 
 	if($request["password"])
 		update_post_meta($post->ID, "password", password_hash($request["password"], PASSWORD_DEFAULT));

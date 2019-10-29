@@ -50,7 +50,9 @@ function vd_create_location( WP_REST_Request $request ) {
 
 	$post = get_post(wp_insert_post($postarr));
 	update_post_meta($post->ID, 'address', $request['address']);
-	update_post_meta($post->ID, 'client_id', $request['client_id']);
+  update_post_meta($post->ID, 'client_id', $request['client_id']);
+  update_post_meta($post->ID, 'email', $request['email']);
+  update_post_meta($post->ID, 'phone', $request['phone']);
 
 	$location = get_location_by_id($post->ID);
 
@@ -84,6 +86,8 @@ function vd_update_location( WP_REST_Request $request ) {
 
 	update_post_meta($post->ID, 'address', $request['address']);
 	update_post_meta($post->ID, 'client_id', $request['client_id']);
+  update_post_meta($post->ID, 'email', $request['email']);
+  update_post_meta($post->ID, 'phone', $request['phone']);
 
 	$location = get_location_by_id($post->ID);
 

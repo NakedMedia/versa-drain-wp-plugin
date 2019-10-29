@@ -29,15 +29,7 @@ function client_create_type() {
 // Add metaboxes to client page
 add_action("admin_init", "create_client_metaboxes");
 function create_client_metaboxes() {
-	add_meta_box("client-meta", "Client Info", "render_client_field_view", "client", "normal", "high");
 	add_meta_box("password-meta", "Password", "render_client_password_view", "client", "normal", "high");
-}
-
-function render_client_field_view() {
-	global $post;
-  $custom = get_custom_fields($post->ID, array('address', 'contact_name', 'contact_email', 'contact_phone'));
-
-  include_once(__DIR__ . '/../views/client.php');
 }
 
 function render_client_password_view() {
@@ -53,10 +45,7 @@ function set_client_columns( $columns ) {
 	$columns = array(
 		'cb' => '<input type="checkbox" />',
 		'id' => __('ID'),
-		'title' => __( 'Client' ),
-		'address' => __('Business Address'),
-		'contact_email' => __('Contact Email'),
-		'contact_phone' => __('Contact Phone'),
+		'title' => __( 'Client' )
 	);
 
 	return $columns;
@@ -73,21 +62,6 @@ function get_client_column_data( $column, $post_id ) {
 
 		case 'id' :
 			echo $post_id;
-			break;
-
-		case 'address':
-			echo $custom['address'] ?: '--';
-			break;
-
-		case 'contact_email':
-			echo $custom['contact_email'] ?: '--';
-			break;
-
-		case 'contact_phone':
-			echo $custom['contact_phone'] ?: '--';
-			break;
-
-		default :
 			break;
 	}
 }
@@ -160,12 +134,7 @@ function save_client( $post_id, $post ) {
 		}
 	}
 
-	$updated_fields = array(
-		'address' => $_POST['address'],
-		'contact_name' => $_POST['contact_name'],
-		'contact_email' => $_POST['contact_email'],
-		'contact_phone' => $_POST['contact_phone']
-	);
+	$updated_fields = array();
 
 	if(array_key_exists('password', $_POST) && $_POST['password'] != '') {
 		$updated_fields['password'] = password_hash($_POST["password"], PASSWORD_DEFAULT);

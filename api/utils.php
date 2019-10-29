@@ -46,10 +46,6 @@ function get_client_by_id( $client_id ) {
   return array(
     'id' => $client_id,
     'name' => get_post($client_id)->post_title,
-    'contact_name' => get_post_meta($client_id, 'contact_name', true),
-    'contact_phone' => get_post_meta($client_id, 'contact_phone', true),
-    'contact_email' => get_post_meta($client_id, 'contact_email', true),
-    'address' => get_post_meta($client_id, 'address', true),
     'img' => wp_get_attachment_image_src(get_post_thumbnail_id( $client_id ))[0],
     'type' => 'client'
   );
@@ -60,7 +56,9 @@ function get_location_by_id( $location_id ) {
     'id' => $location_id,
     'name' => get_post($location_id)->post_title,
     'address' => get_post_meta($location_id, 'address', true),
-    'client_id' => get_post_meta($location_id, 'client_id', true)
+    'client_id' => get_post_meta($location_id, 'client_id', true),
+    'email' => get_post_meta($location_id, 'email', true),
+    'phone' => get_post_meta($location_id, 'phone', true)
   );
 }
 

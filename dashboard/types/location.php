@@ -34,7 +34,7 @@ function create_location_metaboxes() {
 
 function render_location_field_view() {
 	global $post;
-  $custom = get_custom_fields($post->ID, array('address', 'client_id'));
+  $custom = get_custom_fields($post->ID, array('client_id', 'address', 'email', 'phone'));
 
   include_once(__DIR__ . '/../views/location.php');
 }
@@ -45,9 +45,11 @@ function set_location_columns( $columns ) {
 	$columns = array(
 		'cb' => '<input type="checkbox" />',
 		'id' => __('ID'),
-    'title' => __( 'Location' ),
+    'title' => __( 'Location Name' ),
+    'client' => __('Client'),
     'address' => __('Address'),
-    'client' => __('Client')
+    'email' => __('Email'),
+    'phone' => __('Phone'),
 	);
 
 	return $columns;
@@ -58,7 +60,7 @@ add_action( 'manage_location_posts_custom_column', 'get_location_column_data', 1
 function get_location_column_data( $column, $post_id ) {
 	global $post;
 
-	$custom = get_custom_fields($post_id, array('address', 'client_id'));
+	$custom = get_custom_fields($post_id, array('client_id', 'address', 'email', 'phone'));
 
 	switch( $column ) {
 
@@ -66,13 +68,21 @@ function get_location_column_data( $column, $post_id ) {
 			echo $post_id;
 			break;
 
-		case 'address':
-			echo $custom['address'] ?: '--';
-      break;
-      
     case 'client':
 			echo get_post($custom['client_id'])->post_title;
 			break;
+
+		case 'address':
+			echo $custom['address'] ?: '--';
+      break;
+
+    case 'email':
+			echo $custom['email'] ?: '--';
+      break;
+    
+    case 'phone':
+			echo $custom['phone'] ?: '--';
+      break;
 
 		default :
 			break;
@@ -131,7 +141,9 @@ function save_location( $post_id, $post ) {
   
   $updated_fields = array(
     'address' => $_POST["address"],
-    'client_id' => $_POST["client_id"]
+    'client_id' => $_POST["client_id"],
+    'email' => $_POST["email"],
+    'phone' => $_POST["phone"],
   );
 
   set_custom_fields($post_id, $updated_fields);

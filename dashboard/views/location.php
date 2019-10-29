@@ -7,12 +7,6 @@
 ?>
 
 <div class="inner-meta">
-	<label>Address: </label>
-	<br/>
-	<input type="text" name="address" size="60" placeholder="ex: 1600 Amphitheatre Parkway Mountain View, CA 94043" value="<?= $custom['address']?>"/>
-	<br/>
-	<br/>
-
 	<label>Client:</label>
 	<br/>
 	<select name="client_id" id="client_id" value="<?= $custom['client_id'] ?>">
@@ -27,6 +21,24 @@
 
 		?>
 	</select>
+	<br/>
+	<br/>
+
+  <label>Address: </label>
+	<br/>
+	<input type="text" name="address" size="60" placeholder="ex: 1600 Amphitheatre Parkway Mountain View, CA 94043" value="<?= $custom['address']?>"/>
+	<br/>
+	<br/>
+
+  <label>Email: </label>
+	<br/>
+	<input type="text" name="email" size="20" placeholder="ex: john@gmail.com" value="<?= $custom['email'] ?>"/>
+	<br/>
+	<br/>
+
+	<label>Phone: </label>
+	<br/>
+	<input type="text" name="phone" size="20" placeholder="ex: 888-123-4567" value="<?= $custom['phone'] ?>"/>
 	<br/>
 	<br/>
 </div>
