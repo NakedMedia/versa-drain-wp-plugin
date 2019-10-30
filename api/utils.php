@@ -6,7 +6,7 @@ function generate_random_string($length = 10) {
   $randomString = '';
   
   for ($i = 0; $i < $length; $i++) {
-      $randomString .= $characters[rand(0, $charactersLength - 1)];
+    $randomString .= $characters[rand(0, $charactersLength - 1)];
   }
 
   return $randomString;
@@ -52,11 +52,13 @@ function get_client_by_id( $client_id ) {
 }
 
 function get_location_by_id( $location_id ) {
+  $client_id = (int) get_post_meta($location_id, 'client_id', true);
+
   return array(
     'id' => $location_id,
     'name' => get_post($location_id)->post_title,
     'address' => get_post_meta($location_id, 'address', true),
-    'client_id' => get_post_meta($location_id, 'client_id', true),
+    'client' => get_client_by_id($client_id),
     'email' => get_post_meta($location_id, 'email', true),
     'phone' => get_post_meta($location_id, 'phone', true),
     'contact_name' => get_post_meta($location_id, 'contact_name', true),
