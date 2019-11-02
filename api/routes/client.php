@@ -8,7 +8,12 @@ function vd_get_clients( WP_REST_Request $request  ) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
 		$response->set_status(403);
 		return $response;
-	}
+  }
+  
+  // Only return own client data if user is a client
+  if($user->post_type == 'client') {
+    return array( get_client_by_id($user->ID) );
+  }
 
 	$args = array(
 		'posts_per_page'   => -1,

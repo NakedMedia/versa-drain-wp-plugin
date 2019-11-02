@@ -8,7 +8,7 @@ function vd_get_locations( WP_REST_Request $request  ) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
 		$response->set_status(403);
 		return $response;
-	}
+  }
 
 	$args = array(
 		'posts_per_page'   => -1,
@@ -19,9 +19,15 @@ function vd_get_locations( WP_REST_Request $request  ) {
 	$locations = [];
 
 	foreach (get_posts($args) as $post) {
-		$location = get_location_by_id($post->ID);
+    $location = get_location_by_id($post->ID);
+
+    // Filter locations by client if user is a client
+    if($user->post_type == 'client' && $user->ID != $location->client_id) {
+      continue;
+    }
+    
 		array_push($locations, $location);
-	}
+  }
 
 	return new WP_REST_Response( $locations );
 }
