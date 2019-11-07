@@ -68,6 +68,7 @@ function get_location_by_id( $location_id ) {
 function get_report_by_id( $report_id ) {
   $employee_id = (int) get_post_meta($report_id, 'employee_id', true);
   $client_id = (int) get_post_meta($report_id, 'client_id', true);
+  $location_id = (int) get_post_meta($report_id, 'location_id', true);
 
   $media_ids = array();
   $media_urls = array();
@@ -89,6 +90,7 @@ function get_report_by_id( $report_id ) {
     'media_urls' => $media_urls,
     'employee' => get_employee_by_id($employee_id),
     'client' => get_client_by_id($client_id),
+    'location' => get_location_by_id($location_id)
   );
 }
 
