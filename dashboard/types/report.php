@@ -128,10 +128,17 @@ function save_report($post_id, $post) {
 	
 	if ( $post->post_type != 'report' || get_post_status($post_id) == 'trash' ) return $post_id;
 
+	$custom = get_custom_fields($post_id, array('client_id'));
+
+	$location_id = isset($_POST["location_id"]) ? $_POST["location_id"] : null;
+
+	// If client has changed, unset location
+	$location_id = ( $_POST["client_id"] == $custom['client_id'] ) ? $location_id : null;
+
 	$updated_fields = array(
 		'client_id' => $_POST["client_id"],
 		'employee_id' => $_POST["employee_id"],
-		'location_id' => isset($_POST["location_id"]) ? $_POST["location_id"] : null
+		'location_id' => $location_id
 	);
 
 	set_custom_fields($post_id, $updated_fields);
