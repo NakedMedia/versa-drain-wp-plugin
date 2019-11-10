@@ -22,7 +22,7 @@ function vd_get_locations( WP_REST_Request $request  ) {
     $location = get_location_by_id($post->ID);
 
     // Filter locations by client if user is a client
-    if($user->post_type == 'client' && $user->ID != $location->client_id) {
+    if($user->post_type == 'client' && $user->ID != $location['client']['id']) {
       continue;
     }
     
