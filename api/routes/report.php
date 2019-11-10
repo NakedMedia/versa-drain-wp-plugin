@@ -22,8 +22,9 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 		$employee_id = (int) get_post_meta($post->ID, 'employee_id', true);
 		$client_id = (int) get_post_meta($post->ID, 'client_id', true);
 
-		if($employee_id != $user->ID && $client_id != $user->ID && $user->type != 'admin')
-			continue;
+    // Don't return reports that don't belong to logged in client
+    if($user->post_type === 'client' && $user->ID != $client_id)
+      continue;
 
 		$report = get_report_by_id($post->ID);
 
