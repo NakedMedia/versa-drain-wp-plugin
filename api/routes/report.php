@@ -51,6 +51,7 @@ function vd_create_report( WP_REST_Request $request ) {
 	$post = get_post(wp_insert_post($postarr));
 	update_post_meta($post->ID, 'client_id', $request['client_id'] ?: $user->ID);
 	update_post_meta($post->ID, 'employee_id', $request['employee_id'] ?: $user->ID);
+	update_post_meta($post->ID, 'location_id', $request['location_id']);
 
 	if(count($request['media_ids']) > 0) {
 		$media_ids = implode(";", $request['media_ids']);
@@ -139,6 +140,7 @@ function vd_update_report( WP_REST_Request $request ) {
 
 	update_post_meta($post->ID, 'client_id', $request['client_id']);
 	update_post_meta($post->ID, 'employee_id', $request['employee_id']);
+	update_post_meta($post->ID, 'location_id', $request['location_id']);
 
 
 	if(count($request['media_ids']) > 0) {
