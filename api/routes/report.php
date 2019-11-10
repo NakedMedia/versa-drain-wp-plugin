@@ -41,7 +41,13 @@ function vd_create_report( WP_REST_Request $request ) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
 		$response->set_status(403);
 		return $response;
-	}
+  }
+  
+  if($user->type !== 'admin' && $user->ID !== $request['employee_id']) {
+    $response = new WP_REST_Response( array('error' => 'You are not authorized to create this report') );
+		$response->set_status(403);
+		return $response;
+  }
 
 	$postarr = array(
 		'post_content' => $request['description'],
