@@ -1,5 +1,38 @@
 <?php
 
+function send_email($to_email, $to_name, $report) {
+  $report = get_report_by_id($post->ID);
+
+	$emailto = $to_email;
+	$toname = $to_name;
+	$emailfrom = 'info@versadrain.com';
+	$fromname = 'Versa Drain';
+	$subject = 'New Report Submitted For ' . $report['client']['name'];
+	$messagebody = 
+		'<p>Client ID: ' . $report['client']['id'] . '<br/>'.
+		'<p>Client Name: ' . $report['client']['name'] . '<br/>'.
+		'Technician Name: ' . $report['employee']['name'] . '<br/>'.
+		'Date: ' . get_the_date('l, F j, Y', $report['id']) . '<br/>'.
+		'Time: ' . get_the_date('g:i A', $report['id']) . '</p>'.
+		'<p>Job Notes: <br/>' . $report['description'] .'</p>';
+	$headers = 
+		'Return-Path: ' . $emailfrom . "\r\n" . 
+		'From: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" . 
+		'X-Priority: 3' . "\r\n" . 
+		'X-Mailer: PHP ' . phpversion() .  "\r\n" . 
+		'Reply-To: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" .
+		'MIME-Version: 1.0' . "\r\n" . 
+		'Content-Transfer-Encoding: 8bit' . "\r\n" . 
+		'Content-Type: text/html; charset=UTF-8' . "\r\n";
+	
+	$attachments = array();
+
+	foreach ($report['media_ids'] as $media_id)
+		array_push($attachments, get_attached_file($media_id, false));
+
+	return wp_mail($emailto, $subject, $messagebody, $headers, $attachments);
+}
+
 /* ---- Route Callbacks ---- */
 function vd_get_user_reports( WP_REST_Request $request  ) {
 	$user = get_user_from_token($request->get_header('vd-token'));
@@ -66,56 +99,11 @@ function vd_create_report( WP_REST_Request $request ) {
 	}
 
 	else 
-		update_post_meta($post->ID, 'media_ids', null);
+    update_post_meta($post->ID, 'media_ids', null);
 
-	$report = get_report_by_id($post->ID);
+  $report = get_report_by_id($post->ID);
 
-	$emailto = $report['client']['contact_email'];
-	$toname = $report['client']['name'];
-	$emailfrom = 'info@versadrain.com';
-	$fromname = 'Versa Drain';
-	$subject = 'New Report Submitted For ' . $report['client']['name'];
-	$messagebody = 
-		'<p>Client ID: ' . $report['client']['id'] . '<br/>'.
-		'<p>Client Name: ' . $report['client']['name'] . '<br/>'.
-		'Technician Name: ' . $report['employee']['name'] . '<br/>'.
-		'Date: ' . get_the_date('l, F j, Y', $report['id']) . '<br/>'.
-		'Time: ' . get_the_date('g:i A', $report['id']) . '</p>'.
-		'<p>Job Notes: <br/>' . $report['description'] .'</p>';
-	$headers = 
-		'Return-Path: ' . $emailfrom . "\r\n" . 
-		'From: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" . 
-		'X-Priority: 3' . "\r\n" . 
-		'X-Mailer: PHP ' . phpversion() .  "\r\n" . 
-		'Reply-To: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" .
-		'MIME-Version: 1.0' . "\r\n" . 
-		'Content-Transfer-Encoding: 8bit' . "\r\n" . 
-		'Content-Type: text/html; charset=UTF-8' . "\r\n";
-	
-	$attachments = array();
-
-	foreach ($report['media_ids'] as $media_id)
-		array_push($attachments, get_attached_file($media_id, false));
-
-	wp_mail($emailto, $subject, $messagebody, $headers, $attachments);
-
-	$args = array(
-		'posts_per_page'   => -1,
-		'post_type'        => 'employee',
-		'post_status'      => 'publish',
-	);
-
-	$admins = [];
-
-	foreach (get_posts($args) as $post) {
-		$employee = get_employee_by_id($post->ID);
-		
-		if($employee["type"] == 'admin')
-			array_push($admins, $employee);
-	}
-
-	foreach ($admins as $admin)
-			wp_mail($admin["email"], $subject, $messagebody, $headers, $attachments);
+  // Send email here
 
 	return new WP_REST_Response( $report );
 }
