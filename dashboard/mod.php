@@ -8,6 +8,8 @@ function add_dashboard_styles() {
 
 require_once 'utils.php';
 
+require 'settings.php';
+
 require 'types/client.php';
 require 'types/employee.php';
 require 'types/location.php';
