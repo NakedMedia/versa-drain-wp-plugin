@@ -7,14 +7,14 @@ function send_email($to_email, $to_name, $report) {
 	$fromname = 'VersaTrack';
 	$subject = 'New Report Submitted For ' . $report['client']['name'];
 	$messagebody = 
-		'Client ID: ' . $report['client']['id'] . "\n".
-    'Client Name: ' . $report['client']['name'] . "\n".
-    'Location: ' . $report['location']['name'] . "\n".
-    'Address : ' . $report['location']['address'] . "\n\n".
-		'Technician Name: ' . $report['employee']['name'] . "\n\n".
-		'Date: ' . get_the_date('l, F j, Y', $report['id']) . "\n".
-		'Time: ' . get_the_date('g:i A', $report['id']) . "\n\n".
-		'Job Notes: <br/>' . $report['description'] ."\n";
+		'Client ID: ' . $report['client']['id'] . "<br/>".
+    'Client Name: ' . $report['client']['name'] . "<br/>".
+    'Location: ' . $report['location']['name'] . "<br/>".
+    'Address : ' . $report['location']['address'] . "<br/><br/>".
+		'Technician Name: ' . $report['employee']['name'] . "<br/><br/>".
+		'Date: ' . get_the_date('l, F j, Y', $report['id']) . "<br/>".
+		'Time: ' . get_the_date('g:i A', $report['id']) . "<br/><br/>".
+		'Job Notes: <br/>' . $report['description'] ."<br/>";
 	$headers = 
 		'Return-Path: ' . $emailfrom . "\r\n" . 
 		'From: ' . $fromname . ' <' . $emailfrom . '>' . "\r\n" . 
