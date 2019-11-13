@@ -94,4 +94,34 @@ function get_report_by_id( $report_id ) {
   );
 }
 
+function get_client_employees( $client_id ) {
+  $employee_map = array();
+
+  $args = array(
+		'posts_per_page'   => -1,
+		'post_type'        => 'report',
+		'post_status'      => 'publish',
+	);
+
+	foreach (get_posts($args) as $post) {
+		$report_client_id = (int) get_post_meta($post->ID, 'client_id', true);
+
+    // Don't return reports that don't belong the client
+    if($client_id != $report_client_id)
+      continue;
+
+		$report = get_report_by_id($post->ID);
+
+		$employee_map[$report['employee']['id']] = $report['employee'];
+  }
+  
+  $employees = [];
+
+  foreach ($employee_map as $key => $val) {
+    array_push($employees, $val);
+  }
+
+  return $employees;
+}
+
 ?>

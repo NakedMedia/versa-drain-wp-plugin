@@ -14,7 +14,9 @@ function vd_get_employees( WP_REST_Request $request  ) {
 		'posts_per_page'   => -1,
 		'post_type'        => 'employee',
 		'post_status'      => 'publish',
-	);
+  );
+
+  if($user->post_type == 'client') return get_client_employees($user->ID);
 
 	$employees = [];
 
