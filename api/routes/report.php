@@ -1,19 +1,18 @@
 <?php
 
 function send_email($to_email, $to_name, $report) {
-  $report = get_report_by_id($post->ID);
-
 	$emailto = $to_email;
 	$toname = $to_name;
 	$emailfrom = 'info@versadrain.com';
 	$fromname = 'Versa Drain';
 	$subject = 'New Report Submitted For ' . $report['client']['name'];
 	$messagebody = 
-		'<p>Client ID: ' . $report['client']['id'] . '<br/>'.
-		'<p>Client Name: ' . $report['client']['name'] . '<br/>'.
-		'Technician Name: ' . $report['employee']['name'] . '<br/>'.
-		'Date: ' . get_the_date('l, F j, Y', $report['id']) . '<br/>'.
-		'Time: ' . get_the_date('g:i A', $report['id']) . '</p>'.
+		'<p>Client ID: ' . $report['client']['id'] . '</p><br/>'.
+    '<p>Client Name: ' . $report['client']['name'] . '</p><br/>'.
+    '<p>Location: ' . $report['location']['name'] . '</p><br/><br/>'.
+		'<p>Technician Name: ' . $report['employee']['name'] . '</p><br/><br/>'.
+		'<p>Date: ' . get_the_date('l, F j, Y', $report['id']) . '</p><br/>'.
+		'<p>Time: ' . get_the_date('g:i A', $report['id']) . '</p><br/><br/>'.
 		'<p>Job Notes: <br/>' . $report['description'] .'</p>';
 	$headers = 
 		'Return-Path: ' . $emailfrom . "\r\n" . 
@@ -68,7 +67,7 @@ function vd_get_user_reports( WP_REST_Request $request  ) {
 }
 
 function vd_create_report( WP_REST_Request $request ) {
-	$user = get_user_from_token($request->get_header('vd-token'));
+  $user = get_user_from_token($request->get_header('vd-token'));
 
 	if(!$user) {
 		$response = new WP_REST_Response( array('error' => 'Please login') );
@@ -98,12 +97,24 @@ function vd_create_report( WP_REST_Request $request ) {
 		update_post_meta($post->ID, 'media_ids', $media_ids);
 	}
 
-	else 
+	else {
     update_post_meta($post->ID, 'media_ids', null);
+  }
 
   $report = get_report_by_id($post->ID);
 
-  // Send email here
+  $default_email = get_option('vd_default_email');
+
+  $location_email = $report['location']['email'];
+  $client_name = $report['client']['name'];
+  
+  if($request['notify'] && $location_email && $client_name) {
+    send_email($report['location']['email'], $report['client']['name'], $report);
+  }
+
+  if($default_email) {
+    send_email($default_email, 'VersaDrain Techs', $report);
+  }
 
 	return new WP_REST_Response( $report );
 }
