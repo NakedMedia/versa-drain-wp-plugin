@@ -44,6 +44,7 @@ function vd_create_employee( WP_REST_Request $request ) {
 	}
 
 	$postarr = array(
+    'import_id' => $request['id'],
 		'post_title' => $request['name'],
 		'post_status' => 'publish',
 		'post_type' => 'employee'
