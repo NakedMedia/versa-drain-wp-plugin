@@ -13,7 +13,7 @@ function send_email($to_email, $to_name, $report) {
     'Address : ' . $report['location']['address'] . "<br/><br/>".
 		'Technician Name: ' . $report['employee']['name'] . "<br/><br/>".
 		'Date: ' . get_the_date('l, F j, Y', $report['id']) . "<br/>".
-		'Time: ' . get_the_date('g:i A', $report['id']) . "<br/><br/>".
+		'Time: ' . get_the_date('g:i A', $report['id']) . " EST<br/><br/>".
 		'Job Notes: <br/>' . $report['description'] ."<br/>";
 	$headers = 
 		'Return-Path: ' . $emailfrom . "\r\n" . 
